@@ -1,0 +1,52 @@
+# oh-the-futures-youll-shape || .editorconfig
+# --------------------------------
+# Unified code styling and formatting among different editors and IDEs.
+# Justification for (MAX - 1) -> https://reddit.com/r/learnpython/comments/1h2eug
+#
+# Authors: @MaxineToTheStars <https://github.com/MaxineToTheStars>
+# ----------------------------------------------------------------
+
+# Root configuration file
+root = true
+
+# Applies to *ALL* files
+[*]
+end_of_line = lf
+charset = utf-8
+trim_trailing_whitespace = true
+insert_final_newline = true
+
+# Python
+[*.py]
+indent_style = space
+indent_size = 4
+max_line_length = 79
+
+# Java
+[*.java]
+indent_style = space
+indent_size = 2
+max_line_length = 119
+
+# TS/JS
+[*.{js,ts}]
+indent_style = space
+indent_size = 2
+max_line_length = 119
+
+# Rust
+[*.rs]
+indent_style = space
+indent_size = 2
+max_line_length = 79
+
+# Bash/Shell
+[*.sh]
+indent_style = space
+indent_size = 2
+max_line_length = 79
+
+# C/C++
+indent_style = space
+indent_size = 2
+max_line_length = 79

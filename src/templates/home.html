@@ -1,0 +1,56 @@
+<!-- Copyright (c) 2024 Astrl.                                                              -->
+<!-- This file is part of oh-the-futures-youll-shape. It is subject to the license terms in -->
+<!-- the LICENSE file found in the top-level directory of this project and at               -->
+<!-- https://github.com/The-Astrl-Project/oh-the-futures-youll-shape/blob/HEAD/LICENSE.     -->
+<!-- This file may not be copied, modified, propagated, or distributed                      -->
+<!-- except according to the terms contained in the LICENSE file.                           -->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <!-- Generic metadata -->
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- Discord Embed -->
+    <meta property="og:title" content="Oh, the Futures You'll Shape!" />
+    <meta
+      property="og:description"
+      content="Collects and aggregates cost of living and university data to help users plan their future."
+    />
+    <meta property="og:site_name" content="Astrl" />
+    <meta property="og:image" content="" />
+    <meta name="theme-color" content="#7289DA" />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <!-- Site styling -->
+    <link rel="icon" href="../static/images/favicon.ico" />
+    <link rel="stylesheet" href="../static/styles/style.css" />
+    <title>Oh, the Futures You'll Shape!</title>
+
+    <!-- Site functionality -->
+    <script
+      crossorigin="anonymous"
+      integrity="sha512-8ExARjWWkIllMlNzVg7JKq9RKWPlJABQUNq6YvAjE/HobctjH/NA+bSiDMDvouBVjp4Wwnf1VP1OEv7Zgjtuxw=="
+      src="https://cdn.socket.io/4.8.1/socket.io.min.js"
+      type="module"
+    ></script>
+    <script src="../static/js/transport.js" type="module"></script>
+  </head>
+
+  <body>
+    <!-- User Badge -->
+    <button id="user_profile_btn">
+      <img id="user_profile_img" src="../static/images/user_unknown.svg" />
+    </button>
+
+    <!-- Content -->
+    <div class="container">
+      <button id="settings_btn">
+        <img src="../static/images/settings_icon.svg" />
+      </button>
+      <input id="query_field" type="text" placeholder="My future is in..." />
+      <button id="submit_btn">></button>
+    </div>
+  </body>
+</html>

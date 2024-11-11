@@ -1,0 +1,83 @@
+/*
+  Copyright (c) 2024 Astrl.
+
+  This file is part of oh-the-futures-youll-shape. It is subject to the license terms in
+  the LICENSE file found in the top-level directory of this project and at
+  https://github.com/The-Astrl-Project/oh-the-futures-youll-shape/blob/HEAD/LICENSE.
+
+  This file may not be copied, modified, propagated, or distributed
+  except according to the terms contained in the LICENSE file.
+*/
+
+body {
+  align-items: center;
+  background: linear-gradient(45deg, rgb(0, 123, 255), rgb(255, 107, 181));
+  display: flex;
+  font-family: Arial, sans-serif;
+  height: 100vh;
+  justify-content: center;
+  margin: 0;
+}
+
+.container {
+  align-items: center;
+  background-color: rgba(0, 0, 0, 0.8);
+  border-radius: 10px;
+  display: flex;
+  gap: 10px;
+  padding: 20px;
+}
+
+#user_profile_btn {
+  align-items: center;
+  background-color: rgba(0, 0, 0, 0.8);
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  height: 85px;
+  justify-content: center;
+  padding: 0;
+  position: absolute;
+  right: 10px;
+  top: 10px;
+  width: 85px;
+}
+
+#user_profile_img {
+  border-radius: 50%;
+  height: 75px;
+  width: 75px;
+}
+
+#settings_btn {
+  background-color: rgba(0, 123, 255, 1);
+  border-radius: 5px;
+  border: none;
+  cursor: pointer;
+  padding: 10px;
+}
+
+#settings_btn:first-child img {
+  height: 20px;
+  vertical-align: middle;
+  width: 20px;
+}
+
+#query_field {
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 5px;
+  border: none;
+  color: rgba(255, 255, 255, 1);
+  flex: 1;
+  padding: 10px;
+}
+
+#submit_btn {
+  background-color: rgba(255, 105, 180, 1);
+  border-radius: 5px;
+  border: none;
+  color: rgba(255, 255, 255, 1);
+  cursor: pointer;
+  padding: 10px 20px;
+}
