@@ -20,37 +20,7 @@ body {
 }
 
 /* Reusable Classes */
-.rounded-button,
-.settings-button,
-.submit-button {
-  border-radius: 5px;
-  border: none;
-  cursor: pointer;
-}
-
-.primary-button,
-.settings-button {
-  background-color: #007bff;
-  color: white;
-}
-
-.secondary-button,
-.submit-button {
-  background-color: hotpink;
-  color: white;
-}
-
-.transparent-input,
-.query-input {
-  background-color: rgba(255, 255, 255, 0.1);
-  border-radius: 5px;
-  border: none;
-  color: white;
-  padding: 10px;
-}
-
-.circular-button,
-.user-profile-button {
+.circular-button {
   align-items: center;
   border-radius: 50%;
   border: none;
@@ -59,8 +29,38 @@ body {
   justify-content: center;
 }
 
+.primary-button,
+.primary-action-button {
+  background-color: hotpink;
+  color: white;
+}
+
+.rounded-button,
+.secondary-action-button,
+.primary-action-button {
+  border-radius: 5px;
+  border: none;
+  cursor: pointer;
+}
+
+.secondary-button,
+.secondary-action-button {
+  background-color: #007bff;
+  color: white;
+}
+
+.transparent-input,
+.text-input {
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 5px;
+  border: none;
+  color: white;
+  padding: 10px;
+}
+
 /* Component Styles */
-.container {
+.container,
+.container-settings {
   align-items: center;
   background-color: rgba(0, 0, 0, 0.8);
   border-radius: 10px;
@@ -69,38 +69,23 @@ body {
   padding: 20px;
 }
 
-.user-profile {
+.container-row {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+  height: 100%;
+  width: 100%;
+}
+
+.container-settings {
+  bottom: calc(50vh - 300px);
+  flex-direction: column;
+  height: 200px;
+  left: 50%;
   position: absolute;
-  right: 10px;
-  top: 10px;
+  transform: translateX(-50%);
 }
 
-.user-profile-button {
-  background-color: rgba(0, 0, 0, 0.8);
-  height: 85px;
-  width: 85px;
-}
-
-.user-profile-image {
-  border-radius: 50%;
-  height: 75px;
-  width: 75px;
-}
-
-.query-input {
+.text-input {
   flex: 1;
-}
-
-.submit-button {
-  padding: 10px 20px;
-}
-
-.settings-button {
-  padding: 10px;
-}
-
-.settings-icon {
-  height: 20px;
-  vertical-align: middle;
-  width: 20px;
 }
