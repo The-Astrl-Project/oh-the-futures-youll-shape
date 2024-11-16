@@ -8,10 +8,15 @@
   This file may not be copied, modified, propagated, or distributed
   except according to the terms contained in the LICENSE file.
 */
+
 /* Base Styles */
 body {
   align-items: center;
-  background: linear-gradient(45deg, #007bff, #ff6bb5);
+  background: linear-gradient(
+    45deg,
+    rgba(0, 123, 255, 1),
+    rgba(255, 107, 181, 1)
+  );
   display: flex;
   font-family: Arial, sans-serif;
   height: 100vh;
@@ -20,28 +25,23 @@ body {
 }
 
 /* Reusable Classes */
-.rounded-button,
-.settings-button,
-.submit-button {
+.rounded-button {
   border-radius: 5px;
   border: none;
   cursor: pointer;
 }
 
-.primary-button,
-.settings-button {
-  background-color: #007bff;
+.primary-button {
+  background-color: rgba(0, 123, 255, 1);
   color: white;
 }
 
-.secondary-button,
-.submit-button {
-  background-color: hotpink;
+.secondary-button {
+  background-color: rgba(255, 105, 180, 1);
   color: white;
 }
 
-.transparent-input,
-.query-input {
+.transparent-input {
   background-color: rgba(255, 255, 255, 0.1);
   border-radius: 5px;
   border: none;
@@ -49,8 +49,7 @@ body {
   padding: 10px;
 }
 
-.circular-button,
-.user-profile-button {
+.circular-button {
   align-items: center;
   border-radius: 50%;
   border: none;
@@ -76,6 +75,7 @@ body {
 }
 
 .user-profile-button {
+  @extend .circular-button;
   background-color: rgba(0, 0, 0, 0.8);
   height: 85px;
   width: 85px;
@@ -88,14 +88,17 @@ body {
 }
 
 .query-input {
+  @extend .transparent-input;
   flex: 1;
 }
 
 .submit-button {
+  @extend .secondary-button, .rounded-button;
   padding: 10px 20px;
 }
 
 .settings-button {
+  @extend .primary-button, .rounded-button;
   padding: 10px;
 }
 

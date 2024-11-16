@@ -13,7 +13,6 @@
 # ----------------------------------------------------------------
 from os import environ
 from typing import Final
-
 # ---
 
 # ---
@@ -108,7 +107,7 @@ def handle_message(message) -> None:
                         "type": "response",
                         "response_type": "user_profile",
                         "data": None,
-                        "client_id": message_data.get("client_id"),
+                        "transport_client_id": message_data.get("transport_client_id"),
                     },
                 )
 
@@ -130,7 +129,7 @@ def handle_message(message) -> None:
                     "type": "response",
                     "response_type": "user_profile",
                     "data": results.get("photos")[0].get("url"),
-                    "client_id": message_data.get("client_id"),
+                    "transport_client_id": message_data.get("transport_client_id"),
                 },
             )
 
@@ -165,7 +164,7 @@ def handle_message(message) -> None:
                     "type": "oauth",
                     "response_type": "oauth_redirect",
                     "data": oauth_url,
-                    "client_id": message_data.get("client_id"),
+                    "transport_client_id": message_data.get("transport_client_id"),
                 },
             )
 

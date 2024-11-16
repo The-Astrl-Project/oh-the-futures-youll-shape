@@ -14,10 +14,7 @@
 
     <!-- Discord Embed -->
     <meta property="og:title" content="Oh, the Futures You'll Shape!" />
-    <meta
-      property="og:description"
-      content="Collects and aggregates cost of living and university data to help users plan their future."
-    />
+    <meta property="og:description" content="Collects and aggregates cost of living and university data to help users plan their future."/>
     <meta property="og:site_name" content="Astrl" />
     <meta property="og:image" content="" />
     <meta name="theme-color" content="#7289DA" />
@@ -29,28 +26,26 @@
     <title>Oh, the Futures You'll Shape!</title>
 
     <!-- Site functionality -->
-    <script
-      crossorigin="anonymous"
-      integrity="sha512-8ExARjWWkIllMlNzVg7JKq9RKWPlJABQUNq6YvAjE/HobctjH/NA+bSiDMDvouBVjp4Wwnf1VP1OEv7Zgjtuxw=="
-      src="https://cdn.socket.io/4.8.1/socket.io.min.js"
-      type="module"
-    ></script>
+    <script crossorigin="anonymous" integrity="sha512-8ExARjWWkIllMlNzVg7JKq9RKWPlJABQUNq6YvAjE/HobctjH/NA+bSiDMDvouBVjp4Wwnf1VP1OEv7Zgjtuxw==" src="https://cdn.socket.io/4.8.1/socket.io.min.js" type="module"></script>
     <script src="../static/js/transport.js" type="module"></script>
+    <script src="../static/js/interactive.js" type="module"></script>
   </head>
 
   <body>
-    <!-- User Badge -->
-    <button id="user_profile_btn">
-      <img id="user_profile_img" src="../static/images/user_unknown.svg" />
-    </button>
-
     <!-- Content -->
     <div class="container">
-      <button id="settings_btn">
-        <img src="../static/images/settings_icon.svg" />
+      <button class="settings-button" id="settings-button">
+        <img class="settings-icon" src="../static/images/settings_icon.svg" />
       </button>
-      <input id="query_field" type="text" placeholder="My future is in..." />
-      <button id="submit_btn">></button>
+      <input class="query-input" id="query-input" type="text" placeholder="My future is in..."/>
+      <button class="submit-button" id="submit-button">></button>
+    </div>
+
+    <!-- User Badge -->
+    <div class="user-profile">
+      <button class="user-profile-button" id="user-profile-button">
+        <img class="user-profile-image" id="user-profile-image" src="../static/images/user_unknown.svg"/>
+      </button>
     </div>
   </body>
 </html>

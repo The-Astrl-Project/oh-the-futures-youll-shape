@@ -24,68 +24,57 @@
 // Interfaces
 
 // Constants
-const socket = new io();
-const client_id = crypto.randomUUID();
+const _transport_client_id = crypto.randomUUID();
+const _transport_client_socket = new io();
 
 // Public Variables
 
 // Private Variables
 
 // Constructor
-document.getElementById("user_profile_btn").addEventListener("click", onclick_user_profile);
 
 // Public Static Methods
 
 // Public Inherited Methods
-socket.on("connect", () => {
-  // Debug
-  console.log("[DBG] Socket connection opened!");
+/**
+ * Sends a message to the server with the given
+ * ``args``.
+ * @param {*} args - The data to pass
+ * @returns ``void``
+ */
+export function send_message(args) {
+  // Modify the argument
+  args.transport_client_id = _transport_client_id;
 
-  // Hydrate the web page
-  _request_user_profile();
+  // Emit
+  _transport_client_socket.emit("client_message", args);
+}
+
+// Private Static Methods
+_transport_client_socket.on("connect", () => {
+  // Log
+  console.log("[INF] Socket connection opened");
+
+  // Emit connection event
+  window.dispatchEvent(new Event("transport_connected"));
 });
 
-socket.on("disconnect", () => {
-  // Debug
-  console.log("[DBG] Socket connection closed!");
+_transport_client_socket.on("disconnect", () => {
+  // Log
+  console.log("[ERR] Connection to backend has ceased! Please refresh the tab");
+
+  // Emit disconnection event
+  window.dispatchEvent(new Event("transport_disconnected"));
 });
 
-socket.on("server_message", (arg, _) => {
-  // Check if the client_id is the same one as ours
-  if (arg.client_id !== client_id) {
+_transport_client_socket.on("server_message", (arg, _) => {
+  // Check if the client ID matches our local id
+  if (arg.transport_client_id !== _transport_client_id) {
     return;
   }
 
-  // Check the message type
-  if (arg.type === "response") {
-    // Check the response type
-    if (arg.response_type === "user_profile") {
-      // Modify the profile (if applicable)
-      if (arg.data !== null) {
-        document.getElementById("user_profile_img").src = `${arg.data}`;
-      }
-    }
-  }
-
-  // Check the message type
-  if (arg.type === "oauth") {
-    // Check the response type
-    if (arg.response_type === "oauth_redirect") {
-      // Redirect the user
-      window.location.href = arg.data;
-    }
-  }
+  // Emit
+  window.dispatchEvent(new CustomEvent("transport_server_message", { detail: arg }));
 });
 
-// Private Static Methods
-
 // Private Inherited Methods
-function _request_user_profile() {
-  // Send a socket message
-  socket.emit("client_message", { type: "request", data: "user_profile", client_id: client_id });
-}
-
-function onclick_user_profile() {
-  // Send a socket message to commence OAuth
-  socket.emit("client_message", { type: "oauth", data: "register", client_id: client_id });
-}
