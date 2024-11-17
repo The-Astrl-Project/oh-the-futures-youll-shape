@@ -28,6 +28,8 @@ import { send_message } from "./transport.js";
 // Constants
 const user_profile_image = document.getElementById("user-profile-image");
 const user_profile_button = document.getElementById("user-profile-button");
+const dom_submit_button = document.getElementById("submit-button");
+const dom_settings_button = document.getElementById("settings-button");
 
 // Public Variables
 
@@ -44,7 +46,9 @@ const user_profile_button = document.getElementById("user-profile-button");
 // Private Inherited Methods
 function _hydrate_webpage() {
   // Make buttons interactive
-  user_profile_button.addEventListener("click", _on_click_event_handler("user-profile-button"));
+  user_profile_button.addEventListener("click", () => _on_click_event_handler("user-profile-button"));
+  dom_submit_button.addEventListener("click", () => _on_click_event_handler("dom-submit-button"));
+  dom_settings_button.addEventListener("click", () => _on_click_event_handler("dom-settings-button"));
 
   // Request the current user's profile image
   send_message({ type: "request", data: "user_profile" });
@@ -55,6 +59,28 @@ function _on_click_event_handler(from_component) {
   if (from_component === "user-profile-button") {
     // Request for an OAuth session
     send_message({ type: "oauth", data: "register" });
+  }
+
+  if (from_component === "dom-submit-button") {
+    return;
+  }
+
+  if (from_component === "dom-settings-button") {
+    // Retrieve the settings container
+    const container = document.querySelector(".container-settings");
+
+    // Toggle the containers "active" property
+    container.classList.toggle("active");
+
+    // Check wether to fade-in or ease-out
+    if (container.classList.contains("active")) {
+      // Fade-in animation
+      container.style.animation = "container-settings-fade-in 0.3s ease-in-out";
+    } else {
+      // Fade out
+      container.style.animation = "container-settings-fade-out 0.3s ease-in-out";
+      container.style.animationFillMode = "forwards";
+    }
   }
 }
 

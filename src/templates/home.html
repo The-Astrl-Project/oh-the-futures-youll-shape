@@ -16,7 +16,7 @@
   <meta property="og:title" content="Oh, the Futures You'll Shape!" />
   <meta property="og:description" content="Collects and aggregates cost of living and university data to help users plan their future." />
   <meta property="og:site_name" content="Astrl" />
-  <meta property="og:image" content="" />
+  <meta property="og:image" content="../static/images/banner.png" />
   <meta name="theme-color" content="#7289DA" />
   <meta name="twitter:card" content="summary_large_image" />
 
@@ -44,17 +44,19 @@
   <!-- Settings Container -->
   <div class="container-settings">
     <div class="container-row">
-      <input class="text-input" type="text" placeholder="Setting 1" />
-      <button style="background: linear-gradient(45deg, rgba(0, 123, 255, 1), rgba(255, 107, 181, 1)); border-radius: 5px; border: none; height: 35px; width: 35px;">
-        <img style="height: 100%; width: 100%" src="../static/images/my_location.svg" />
+      <input class="text-input" type="text" placeholder="My residency is in..." />
+      <button style="background: linear-gradient(45deg, rgba(0, 123, 255, 1), rgba(255, 107, 181, 1)); border-radius: 5px; border: none; cursor: pointer; height: 35px; width: 35px;">
+        <img style="height: 100%; width: 100%" src="../static/images/my_location_icon.svg" />
       </button>
     </div>
     <div class="container-row">
-      <input class="text-input" type="text" placeholder="Setting 2" />
+      <input class="text-input" type="text" placeholder="My major is in..." />
     </div>
     <div class="container-row">
-      <input class="text-input" type="text" placeholder="Setting 3" />
-      <input type="checkbox" class="settings-checkbox" />
+      <div class="container-checkbox">
+        <label>Filter by EU/US M.A.P status?</label>
+        <input type="checkbox" id="filter-by-map" />
+      </div>
     </div>
     <div class="container-row">
       <button class="secondary-action-button" style="height: 80%; width: 100%">Secondary Button</button>
@@ -65,7 +67,7 @@
   <!-- User Badge -->
   <div style="position: absolute; right: 10px; top: 10px">
     <button class="circular-button" id="user-profile-button" style="background-color: rgba(0, 0, 0, 0.8); height: 85px; width: 85px">
-      <img style="border-radius: 50%; height: 75px; width: 75px" src="../static/images/user_unknown.svg" />
+      <img style="border-radius: 50%; height: 75px; width: 75px" src="../static/images/user_unknown_icon.svg" />
     </button>
   </div>
 </body>

@@ -9,19 +9,43 @@
   except according to the terms contained in the LICENSE file.
 */
 
+/* Modifiable Styles */
+$color-primary: rgba(255, 107, 181, 1);
+$color-secondary: rgba(0, 123, 255, 1);
+$color-tertiary: rgba(255, 255, 255, 1);
+$color-background-text: rgba(255, 255, 255, 0.1);
+$color-background-solid: rgba(0, 0, 0, 0.8);
+
 /* Base Styles */
 body {
   align-items: center;
-  background: linear-gradient(
-    45deg,
-    rgba(0, 123, 255, 1),
-    rgba(255, 107, 181, 1)
-  );
+  background: linear-gradient(45deg, $color-secondary, $color-primary);
   display: flex;
   font-family: Arial, sans-serif;
   height: 100vh;
   justify-content: center;
   margin: 0;
+}
+
+input[type="checkbox"] {
+  appearance: none;
+  background-color: $color-background-text;
+  border-radius: 5px;
+  border: 2px solid $color-tertiary;
+  cursor: pointer;
+  height: 30px;
+  transition: background-color 0.3s ease-in-out, border-color 0.3s ease-in-out;
+  width: 30px;
+
+  &:checked {
+    background-color: rgba(145, 114, 213, 1);
+    border-color: $color-tertiary;
+  }
+}
+
+label {
+  color: $color-tertiary;
+  font-size: 16px;
 }
 
 /* Reusable Classes */
@@ -35,8 +59,8 @@ body {
 }
 
 .primary-button {
-  background-color: rgba(255, 105, 180, 1);
-  color: white;
+  background-color: $color-primary;
+  color: $color-tertiary;
 }
 
 .rounded-button {
@@ -46,12 +70,12 @@ body {
 }
 
 .secondary-button {
-  background-color: rgba(0, 123, 255, 1);
-  color: white;
+  background-color: $color-secondary;
+  color: $color-tertiary;
 }
 
 .transparent-input {
-  background-color: rgba(255, 255, 255, 0.1);
+  background-color: $color-background-text;
   border-radius: 5px;
   border: none;
   color: white;
@@ -61,11 +85,17 @@ body {
 /* Component Styles */
 .container {
   align-items: center;
-  background-color: rgba(0, 0, 0, 0.8);
+  background-color: $color-background-solid;
   border-radius: 10px;
   display: flex;
   gap: 10px;
   padding: 20px;
+}
+
+.container-checkbox {
+  align-items: center;
+  display: flex;
+  gap: 10px;
 }
 
 .container-row {
@@ -82,8 +112,37 @@ body {
   flex-direction: column;
   height: 200px;
   left: 50%;
+  opacity: 0;
   position: absolute;
-  transform: translateX(-50%);
+  transform: translate(-50%, 20px);
+  transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
+
+  @keyframes container-settings-fade-in {
+    from {
+      opacity: 0;
+      transform: translate(-50%, 20px);
+    }
+    to {
+      opacity: 1;
+      transform: translate(-50%, 0px);
+    }
+  }
+
+  @keyframes container-settings-fade-out {
+    from {
+      opacity: 1;
+      transform: translate(-50%, 0px);
+    }
+    to {
+      opacity: 0;
+      transform: translate(-50%, 20px);
+    }
+  }
+}
+
+.container-settings.active {
+  opacity: 1;
+  transform: translate(-50%, 0px);
 }
 
 .primary-action-button {
