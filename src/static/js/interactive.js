@@ -51,18 +51,31 @@ function _hydrate_webpage() {
   dom_settings_button.addEventListener("click", () => _on_click_event_handler("dom-settings-button"));
 
   // Request the current user's profile image
-  send_message({ type: "request", data: "user_profile" });
+  send_message({ type: "request", data_type: "user_profile" });
 }
 
 function _on_click_event_handler(from_component) {
   // Check the component
   if (from_component === "user-profile-button") {
     // Request for an OAuth session
-    send_message({ type: "oauth", data: "register" });
+    send_message({ type: "oauth", data_type: "register" });
   }
 
   if (from_component === "dom-submit-button") {
-    return;
+    // Temporary variable to hold user data
+    let args = {};
+
+    // Retrieve inputted data
+    args.target_state = document.getElementById("target-state").value;
+    args.current_state = document.getElementById("current-state").value;
+    args.study_target = document.getElementById("study-target").value;
+    args.use_queer_score = document.getElementById("use-queer-score").checked;
+
+    // Log
+    console.log(args);
+
+    // Submit data (Verification is done on the server)
+    send_message({ type: "request", data_type: "search", args: args });
   }
 
   if (from_component === "dom-settings-button") {
@@ -90,24 +103,38 @@ window.addEventListener("transport_connected", () => {
 });
 
 // Handle incoming server(backend) messages
-window.addEventListener("transport_server_message", (arg) => {
+window.addEventListener("transport_server_message", (args) => {
+  // Redefine args
+  args = args.detail;
+
   // Check the message type
-  if (arg.type === "response") {
+  if (args.type === "response") {
     // Check the response type
-    if (arg.response_type === "user_profile") {
+    if (args.response_type === "user_profile") {
       // Modify the profile (if applicable)
-      if (arg.data !== null) {
-        user_profile_image.src = `${arg.data}`;
+      if (args.data !== null) {
+        user_profile_image.src = `${args.data}`;
+      }
+    }
+
+    if (args.response_type === "search") {
+      // Check if the request was invalidated
+      if (args.data === null) {
+        // Alert the user
+        alert("In order to use this site you must be logged in to a Google account.");
+
+        // Request for an OAuth session
+        send_message({ type: "oauth", data_type: "register" });
       }
     }
   }
 
   // Check the message type
-  if (arg.type === "oauth") {
+  if (args.type === "oauth") {
     // Check the response type
-    if (arg.response_type === "oauth_redirect") {
+    if (args.response_type === "register") {
       // Redirect the user
-      window.location.href = arg.data;
+      window.location.href = args.data;
     }
   }
 });

@@ -14,7 +14,7 @@
 from os import environ
 from typing import Final
 # ---
-
+from bot.bot import SearchQuery, search
 # ---
 import flask
 from flask_socketio import SocketIO
@@ -31,7 +31,7 @@ from googleapiclient.discovery import build
 # ----------------------------------------------------------------
 
 # Constants
-__version__: Final[str] = "v0.1.0-DEV"
+__version__: Final[str] = "0.1.0-DEV"
 
 # Public Variables
 
@@ -97,7 +97,7 @@ def handle_message(message) -> None:
     # Check the message type
     if message_data.get("type") == "request":
         # Check the request type
-        if message_data.get("data") == "user_profile":
+        if message_data.get("data_type") == "user_profile":
             # Check for credentials
             if flask.session.get("credentials") == None:
                 # No credentials found
@@ -133,10 +133,27 @@ def handle_message(message) -> None:
                 },
             )
 
+        if message_data.get("data_type") == "search":
+            # Check for credentials
+            if flask.session.get("credentials") == None:
+                # No credentials found
+                return socket.emit(
+                    "server_message",
+                    {
+                        "type": "response",
+                        "response_type": "search",
+                        "data": None,
+                        "transport_client_id": message_data.get("transport_client_id"),
+                    },
+                )
+
+            # TODO: Finish this method
+            print(message_data.get("args"))
+
     # Check the message type
     if message_data.get("type") == "oauth":
         # Check the oauth type
-        if message_data.get("data") == "register":
+        if message_data.get("data_type") == "register":
             # Generate a OAuth control flow
             oauth_control_flow: Flow = Flow.from_client_secrets_file(
                 "keys.json",
@@ -162,7 +179,7 @@ def handle_message(message) -> None:
                 "server_message",
                 {
                     "type": "oauth",
-                    "response_type": "oauth_redirect",
+                    "response_type": "register",
                     "data": oauth_url,
                     "transport_client_id": message_data.get("transport_client_id"),
                 },
@@ -172,14 +189,14 @@ def handle_message(message) -> None:
 
 # Script Check
 if __name__ == "__main__":
+    # Print project info
+    print(f"Oh, the Futures You'll Shape || Web Server v{__version__}\nCopyright (c) 2024 Astrl\n\n")
+
     # Configure the environment
     environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
 
     # Configure the app
     app.config["SECRET_KEY"] = "ASTRL_DEV"
 
-    # Configure the app from the current environment
-    # app.config.from_prefixed_env(prefix="ASTRL-")
-
     # Run as development
-    socket.run(app, debug=True)
+    socket.run(app, host="0.0.0.0", port="5000", debug=True)

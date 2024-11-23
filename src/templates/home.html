@@ -37,25 +37,25 @@
     <button class="secondary-action-button" id="settings-button" style="padding: 10px">
       <img style="height: 20px; vertical-align: middle; width: 20px" src="../static/images/settings_icon.svg" />
     </button>
-    <input class="text-input" id="query-input" type="text" placeholder="My future is in..." />
+    <input class="text-input" id="target-state" type="text" placeholder="My future is in..." />
     <button class="primary-action-button" id="submit-button" style="padding: 10px 20px">></button>
   </div>
 
   <!-- Settings Container -->
   <div class="container-settings">
     <div class="container-row">
-      <input class="text-input" type="text" placeholder="My residency is in..." />
+      <input class="text-input" id="current-state" type="text" placeholder="My residency is in..." />
       <button style="background: linear-gradient(45deg, rgba(0, 123, 255, 1), rgba(255, 107, 181, 1)); border-radius: 5px; border: none; cursor: pointer; height: 35px; width: 35px;">
         <img style="height: 100%; width: 100%" src="../static/images/my_location_icon.svg" />
       </button>
     </div>
     <div class="container-row">
-      <input class="text-input" type="text" placeholder="My major is in..." />
+      <input class="text-input" id="study-target" type="text" placeholder="My major is in..." />
     </div>
     <div class="container-row">
       <div class="container-checkbox">
         <label>Filter by EU/US M.A.P status?</label>
-        <input type="checkbox" id="filter-by-map" />
+        <input type="checkbox" id="use-queer-score" />
       </div>
     </div>
     <div class="container-row">

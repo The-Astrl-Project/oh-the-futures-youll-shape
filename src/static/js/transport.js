@@ -24,7 +24,8 @@
 // Interfaces
 
 // Constants
-const _transport_client_id = crypto.randomUUID();
+// NOTE: This should not be shipped to PROD like this
+const _transport_client_id = location.protocol == "https" ? crypto.randomUUID().toString() : Math.random().toString();
 const _transport_client_socket = new io();
 
 // Public Variables
@@ -67,14 +68,14 @@ _transport_client_socket.on("disconnect", () => {
   window.dispatchEvent(new Event("transport_disconnected"));
 });
 
-_transport_client_socket.on("server_message", (arg, _) => {
+_transport_client_socket.on("server_message", (args, _) => {
   // Check if the client ID matches our local id
-  if (arg.transport_client_id !== _transport_client_id) {
+  if (args.transport_client_id !== _transport_client_id) {
     return;
   }
 
   // Emit
-  window.dispatchEvent(new CustomEvent("transport_server_message", { detail: arg }));
+  window.dispatchEvent(new CustomEvent("transport_server_message", { detail: args }));
 });
 
 // Private Inherited Methods
