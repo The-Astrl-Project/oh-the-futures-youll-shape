@@ -37,24 +37,23 @@ const _transport_client_socket = new WebSocket(`ws://${location.host}/transport`
 // Public Static Methods
 
 // Public Inherited Methods
-/**
- * Sends a message to the server with the given
- * ``args``.
- * @param {*} args - The data to pass
- * @returns ``void``
- */
-export function send_message(args) {
-  // Modify the argument
-  args.transport_client_id = _transport_client_id;
+export function send_as_json(request_type, request_data, request_args = null) {
+  // Convert to a JSON string
+  const args = JSON.stringify({
+    request_type: request_type,
+    request_data: request_data,
+    request_args: request_args,
+    transport_client_id: _transport_client_id,
+  });
 
-  // Convert to JSON string and send
-  _transport_client_socket.send(JSON.stringify(args));
+  // Send to the server
+  _transport_client_socket.send(args);
 }
 
 // Private Static Methods
 _transport_client_socket.addEventListener("open", (_) => {
   // Log
-  console.log("[INF] Socket connection opened");
+  console.log("[LOG] Socket connection opened!");
 
   // Emit connection event
   window.dispatchEvent(new Event("transport_connected"));
@@ -62,7 +61,7 @@ _transport_client_socket.addEventListener("open", (_) => {
 
 _transport_client_socket.addEventListener("close", (_) => {
   // Log
-  console.log("[ERR] Connection to backend has ceased! Please refresh the tab");
+  console.log("[ERR] Connection to backend has ceased! Please refresh the tab.");
 
   // Emit disconnection event
   window.dispatchEvent(new Event("transport_disconnected"));
@@ -72,7 +71,7 @@ _transport_client_socket.addEventListener("message", (event) => {
   // Redefine event
   event = JSON.parse(event.data);
 
-  // Check if the received transport ID matches the local transport ID
+  // Check if the received transport ID does not match the local transport ID
   if (event.transport_client_id !== _transport_client_id) {
     // Ignore this message
     return;
