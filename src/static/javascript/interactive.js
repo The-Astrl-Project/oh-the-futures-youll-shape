@@ -51,14 +51,14 @@ function _hydrate_webpage() {
   dom_settings_button.addEventListener("click", () => _on_click_event_handler("dom-settings-button"));
 
   // Request the current user's profile image
-  send_message({ type: "request", data_type: "user_profile" });
+  send_message({ request_type: "data", request_data: "user-profile-image" });
 }
 
 function _on_click_event_handler(from_component) {
   // Check the component
   if (from_component === "user-profile-button") {
     // Request for an OAuth session
-    send_message({ type: "oauth", data_type: "register" });
+    send_message({ request_type: "oauth", request_data: "register" });
   }
 
   if (from_component === "dom-submit-button") {
@@ -71,11 +71,8 @@ function _on_click_event_handler(from_component) {
     args.study_target = document.getElementById("study-target").value;
     args.use_queer_score = document.getElementById("use-queer-score").checked;
 
-    // Log
-    console.log(args);
-
     // Submit data (Verification is done on the server)
-    send_message({ type: "request", data_type: "search", args: args });
+    send_message({ request_type: "data", request_data: "search", request_args: args });
   }
 
   if (from_component === "dom-settings-button") {
@@ -107,34 +104,32 @@ window.addEventListener("transport_server_message", (args) => {
   // Redefine args
   args = args.detail;
 
-  // Check the message type
-  if (args.type === "response") {
-    // Check the response type
-    if (args.response_type === "user_profile") {
-      // Modify the profile (if applicable)
-      if (args.data !== null) {
-        user_profile_image.src = `${args.data}`;
-      }
-    }
+  // Parse the message contents
+  const message_response_type = args.response_type;
+  const message_response_data = args.response_data;
+  const message_response_args = args.response_args;
 
-    if (args.response_type === "search") {
-      // Check if the request was invalidated
-      if (args.data === null) {
-        // Alert the user
-        alert("In order to use this site you must be logged in to a Google account.");
-
-        // Request for an OAuth session
-        send_message({ type: "oauth", data_type: "register" });
+  // Server -> Client || Response to our request
+  if (message_response_type === "data") {
+    // Server sent the current user's profile image (if applicable)
+    if (message_response_data === "user-profile-image") {
+      // Modify the user badge
+      console.log(args);
+      if (message_response_args !== null) {
+        user_profile_image.src = `${message_response_args}`;
       }
     }
   }
 
-  // Check the message type
-  if (args.type === "oauth") {
-    // Check the response type
-    if (args.response_type === "register") {
-      // Redirect the user
-      window.location.href = args.data;
+  // Server -> Client || Response to an OAuth request
+  if (message_response_type === "oauth") {
+    // Server sent the appropriate login/register url
+    if (message_response_data === "register") {
+      // Check that a url was returned
+      if (message_response_args !== null) {
+        // Redirect the user
+        window.location.href = message_response_args;
+      }
     }
   }
 });

@@ -26,7 +26,7 @@
 // Constants
 // NOTE: This should not be shipped to PROD like this
 const _transport_client_id = location.protocol == "https" ? crypto.randomUUID().toString() : Math.random().toString();
-const _transport_client_socket = new io();
+const _transport_client_socket = new WebSocket(`ws://${location.host}/transport`);
 
 // Public Variables
 
@@ -47,12 +47,12 @@ export function send_message(args) {
   // Modify the argument
   args.transport_client_id = _transport_client_id;
 
-  // Emit
-  _transport_client_socket.emit("client_message", args);
+  // Convert to JSON string and send
+  _transport_client_socket.send(JSON.stringify(args));
 }
 
 // Private Static Methods
-_transport_client_socket.on("connect", () => {
+_transport_client_socket.addEventListener("open", (_) => {
   // Log
   console.log("[INF] Socket connection opened");
 
@@ -60,7 +60,7 @@ _transport_client_socket.on("connect", () => {
   window.dispatchEvent(new Event("transport_connected"));
 });
 
-_transport_client_socket.on("disconnect", () => {
+_transport_client_socket.addEventListener("close", (_) => {
   // Log
   console.log("[ERR] Connection to backend has ceased! Please refresh the tab");
 
@@ -68,14 +68,18 @@ _transport_client_socket.on("disconnect", () => {
   window.dispatchEvent(new Event("transport_disconnected"));
 });
 
-_transport_client_socket.on("server_message", (args, _) => {
-  // Check if the client ID matches our local id
-  if (args.transport_client_id !== _transport_client_id) {
+_transport_client_socket.addEventListener("message", (event) => {
+  // Redefine event
+  event = JSON.parse(event.data);
+
+  // Check if the received transport ID matches the local transport ID
+  if (event.transport_client_id !== _transport_client_id) {
+    // Ignore this message
     return;
   }
 
   // Emit
-  window.dispatchEvent(new CustomEvent("transport_server_message", { detail: args }));
+  window.dispatchEvent(new CustomEvent("transport_server_message", { detail: event }));
 });
 
 // Private Inherited Methods

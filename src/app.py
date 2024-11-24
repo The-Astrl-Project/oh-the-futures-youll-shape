@@ -14,10 +14,10 @@
 from os import environ
 from typing import Final
 # ---
-from bot.bot import SearchQuery, search
+
 # ---
-import flask
-from flask_socketio import SocketIO
+import quart
+from asyncio import CancelledError
 from google_auth_oauthlib.flow import Flow
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
@@ -27,176 +27,191 @@ from googleapiclient.discovery import build
 # --------------------------------
 # Oh, the Futures You'll Shape || app.py
 #
+# A minimal and asynchronous webserver.
+#
 # @author @MaxineToTheStars <https://github.com/MaxineToTheStars>
 # ----------------------------------------------------------------
 
-# Constants
-__version__: Final[str] = "0.1.0-DEV"
+# Class Definitions
+class Server:
+    # Enums
 
-# Public Variables
+    # Interfaces
 
-# Private Variables
-app: Final[flask.Flask] = flask.Flask(__name__, template_folder="templates")
-socket: SocketIO = SocketIO(app=app)
+    # Constants
+    __version__: Final[str] = "0.2.0-DEV"
 
-# Routes
-@app.get("/")
-def route_home() -> None:
-    # Populate the current session
-    if "state" not in flask.session:
-        # Create a new state
-        flask.session["state"] = None
+    # Public Variables
 
-    if "credentials" not in flask.session:
-        # Create a new credentials
-        flask.session["credentials"] = None
+    # Private Variables
+    _server_config: dict = None
+    _app: quart.Quart = None
 
-    # Render the home page
-    return flask.render_template("home.html")
+    # Constructor
+    def __init__(self, config: dict) -> None:
+        # Store the server configuration
+        self._server_config = config
 
-@app.get("/callback")
-def route_callback() -> None:
-    # Retrieve the OAuth state
-    oauth_state = flask.session.get("state")
+        # Instance a new Quart app
+        self._app = quart.Quart(__name__)
 
-    # Create a new OAuth flow
-    oauth_control_flow: Flow = Flow.from_client_secrets_file(
-        "keys.json",
-        state=oauth_state,
-        scopes=[
-            "https://www.googleapis.com/auth/userinfo.profile",
-            "https://www.googleapis.com/auth/spreadsheets",
-        ],
-    )
-    oauth_control_flow.redirect_uri = flask.url_for("route_callback", _external=True)
+        # Configure the Quart app
+        self._app.config.update(config)
 
-    # Get the callback response
-    oauth_response = flask.request.url
-    oauth_control_flow.fetch_token(authorization_response=oauth_response)
+        # Configure the server routes
+        self._app.route("/", methods=["GET"])(self._handle_route_home)
+        self._app.route("/callback", methods=["GET"])(self._handle_route_callback)
+        self._app.websocket("/transport")(self._handle_route_websocket)
 
-    # Store the credentials in the session
-    oauth_credentials = oauth_control_flow.credentials
-    flask.session["credentials"] = {
-        "token": oauth_credentials.token,
-        "refresh_token": oauth_credentials.refresh_token,
-        "token_uri": oauth_credentials.token_uri,
-        "client_id": oauth_credentials.client_id,
-        "client_secret": oauth_credentials.client_secret,
-        "scopes": oauth_credentials.scopes,
-    }
+    # Public Static Methods
 
-    # Redirect
-    return flask.redirect(flask.url_for("route_home"))
+    # Public Inherited Methods
+    def run_app_as_debug(self) -> None:
+        # Configure the environment
+        environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
 
-# Transport Socket
-@socket.on("client_message")
-def handle_message(message) -> None:
-    # Parse as dict
-    message_data: Final[dict] = message
+        # Start the web server
+        self._app.run(host="0.0.0.0", port="5000", debug=True, use_reloader=False)
 
-    # Check the message type
-    if message_data.get("type") == "request":
-        # Check the request type
-        if message_data.get("data_type") == "user_profile":
-            # Check for credentials
-            if flask.session.get("credentials") == None:
-                # No credentials found
-                return socket.emit(
-                    "server_message",
-                    {
-                        "type": "response",
-                        "response_type": "user_profile",
-                        "data": None,
-                        "transport_client_id": message_data.get("transport_client_id"),
-                    },
-                )
+    # Private Static Methods
 
-            # Load the credentials stored in the session
-            credentials = Credentials(**flask.session.get("credentials"))
+    # Private Inherited Methods
+    async def _handle_route_home(self) -> str:
+        # Populate the current session
+        if "state" not in quart.session or "credentials" not in quart.session:
+            # Create a new state and credentials session
+            quart.session["state"] = None
+            quart.session["credentials"] = None
 
-            # Build the People API service
-            people_api_service = build("people", "v1", credentials=credentials)
-            results = (
-                people_api_service.people()
-                .get(resourceName="people/me", personFields="photos")
-                .execute()
-            )
+        # Render the homepage
+        return await quart.render_template("index.html")
 
-            # Return the user profile
-            return socket.emit(
-                "server_message",
-                {
-                    "type": "response",
-                    "response_type": "user_profile",
-                    "data": results.get("photos")[0].get("url"),
-                    "transport_client_id": message_data.get("transport_client_id"),
-                },
-            )
+    async def _handle_route_callback(self) -> str:
+        # Retrieve the OAuth state
+        oauth_state: Final[str] = quart.session.get("state")
 
-        if message_data.get("data_type") == "search":
-            # Check for credentials
-            if flask.session.get("credentials") == None:
-                # No credentials found
-                return socket.emit(
-                    "server_message",
-                    {
-                        "type": "response",
-                        "response_type": "search",
-                        "data": None,
-                        "transport_client_id": message_data.get("transport_client_id"),
-                    },
-                )
+        # Create a new OAuth control flow
+        oauth_control_flow: Final[Flow] = Flow.from_client_secrets_file(
+            "keys.json",
+            state=oauth_state,
+            scopes=[
+                "https://www.googleapis.com/auth/userinfo.profile",
+                "https://www.googleapis.com/auth/spreadsheets",
+            ],
+        )
 
-            # TODO: Finish this method
-            print(message_data.get("args"))
+        # Configure the control flow
+        oauth_control_flow.redirect_uri = quart.url_for(
+            "_handle_route_callback", _external=True
+        )
 
-    # Check the message type
-    if message_data.get("type") == "oauth":
-        # Check the oauth type
-        if message_data.get("data_type") == "register":
-            # Generate a OAuth control flow
-            oauth_control_flow: Flow = Flow.from_client_secrets_file(
-                "keys.json",
-                scopes=[
-                    "https://www.googleapis.com/auth/userinfo.profile",
-                    "https://www.googleapis.com/auth/spreadsheets",
-                ],
-            )
+        # Get the callback response
+        oauth_response: Final[str] = quart.request.url
+        oauth_control_flow.fetch_token(authorization_response=oauth_response)
 
-            # Configure the redirect URI
-            oauth_control_flow.redirect_uri = "http://127.0.0.1:5000/callback"
+        # Store the credentials in the session
+        oauth_credentials = oauth_control_flow.credentials
+        quart.session["credentials"] = {
+            "token": oauth_credentials.token,
+            "refresh_token": oauth_credentials.refresh_token,
+            "token_uri": oauth_credentials.token_uri,
+            "client_id": oauth_credentials.client_id,
+            "client_secret": oauth_credentials.client_secret,
+            "scopes": oauth_credentials.scopes,
+        }
 
-            # Generate the OAuth URL and the OAuth state
-            oauth_url, oauth_state = oauth_control_flow.authorization_url(
-                access_type="offline", include_granted_scopes="true", prompt="consent"
-            )
+        # Redirect back to the home page
+        return quart.redirect(quart.url_for("_handle_route_home"))
 
-            # Store the state in the current session
-            flask.session["state"] = oauth_state
+    async def _handle_route_websocket(self) -> str:
+        try:
+            while True:
+                # Declare incoming data variable
+                incoming_data: Final[dict] = await quart.websocket.receive_json()
 
-            # Prompt OAuth redirection
-            return socket.emit(
-                "server_message",
-                {
-                    "type": "oauth",
-                    "response_type": "register",
-                    "data": oauth_url,
-                    "transport_client_id": message_data.get("transport_client_id"),
-                },
-            )
+                # Parse the message contents
+                message_request_type: Final[str] = incoming_data.get("request_type")
+                message_request_data: Final[str] = incoming_data.get("request_data")
+                message_request_args: Final[dict] = incoming_data.get("request_args")
+                message_transport_client_id: Final[str] = incoming_data.get("transport_client_id")
 
-# Private Methods
+                # Client -> Server || Requesting data to hydrate/update the main webpage
+                if message_request_type == "data":
+                    # Client is requesting the current user's profile image
+                    if message_request_data == "user-profile-image":
+                        # Check if the current user is signed in
+                        if quart.session.get("credentials") == None:
+                            # User is not logged in
+                            await quart.websocket.send_json(
+                                {
+                                    "response_type": message_request_type,
+                                    "response_data": message_request_data,
+                                    "response_args": message_request_args,
+                                    "transport_client_id": message_transport_client_id,
+                                }
+                            )
+                        else:
+
+                            # Retrieve the stored credentials
+                            credentials: Final[Credentials] = Credentials(**quart.session.get("credentials"))
+
+                            # Build the PeopleAPI service
+                            people_api_service: Final[any] = build("people", "v1", credentials=credentials)
+                            results: Final[any] = (
+                                people_api_service.people()
+                                .get(resourceName="people/me", personFields="photos")
+                                .execute()
+                            )
+
+                            # Return the user profile image
+                            await quart.websocket.send_json(
+                                {
+                                    "response_type": message_request_type,
+                                    "response_data": message_request_data,
+                                    "response_args": results.get("photos")[0].get("url"),
+                                    "transport_client_id": message_transport_client_id,
+                                }
+                            )
+
+                # Client -> Server || Requesting an OAuth session to login a user
+                if message_request_type == "oauth":
+                    # Client is requesting to login/register a user
+                    if message_request_data == "register":
+                        # Generate an OAuth control flow
+                        oauth_control_flow: Final[Flow] = Flow.from_client_secrets_file(
+                            "keys.json",
+                            scopes=[
+                                "https://www.googleapis.com/auth/userinfo.profile",
+                                "https://www.googleapis.com/auth/spreadsheets",
+                            ],
+                        )
+
+                        # Configure the control flow
+                        oauth_control_flow.redirect_uri = "http://127.0.0.1:5000/callback"
+
+                        # Generate the OAuth URL and OAuth state
+                        oauth_url, oauth_state = oauth_control_flow.authorization_url(
+                            access_type="offline",
+                            include_granted_scopes="true",
+                            prompt="consent",
+                        )
+
+                        # Store the OAuth state in the current session
+                        quart.session["state"] = oauth_state
+
+                        # Prompt OAuth redirection
+                        await quart.websocket.send_json(
+                            {
+                                "response_type": message_request_type,
+                                "response_data": message_request_data,
+                                "response_args": oauth_url,
+                                "transport_client_id": message_transport_client_id,
+                            }
+                        )
+        except CancelledError:
+            raise
 
 # Script Check
 if __name__ == "__main__":
-    # Print project info
-    print(f"Oh, the Futures You'll Shape || Web Server v{__version__}\nCopyright (c) 2024 Astrl\n\n")
-
-    # Configure the environment
-    environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
-
-    # Configure the app
-    app.config["SECRET_KEY"] = "ASTRL_DEV"
-
-    # Run as development
-    socket.run(app, host="0.0.0.0", port="5000", debug=True)
+    # Run in debug mode
+    Server({"SECRET_KEY": "ASTRL-DEV"}).run_app_as_debug()
