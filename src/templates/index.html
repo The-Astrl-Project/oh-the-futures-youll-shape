@@ -16,26 +16,25 @@
   <meta property="og:title" content="Oh, the Futures You'll Shape!" />
   <meta property="og:description" content="Collects and aggregates cost of living and university data to help users plan their future." />
   <meta property="og:site_name" content="Astrl" />
-  <meta property="og:image" content="../static/images/banner.png" />
+  <meta property="og:image" content="https://github.com/The-Astrl-Project/oh-the-futures-youll-shape/blob/development/src/static/images/banner.png" />
   <meta name="theme-color" content="#7289DA" />
   <meta name="twitter:card" content="summary_large_image" />
 
   <!-- Site styling -->
   <link rel="icon" href="../static/images/favicon.ico" />
-  <link rel="stylesheet" href="../static/styles/style.css" />
+  <link rel="stylesheet" href="../static/style/style.css" />
   <title>Oh, the Futures You'll Shape!</title>
 
   <!-- Site functionality -->
-  <script crossorigin="anonymous" integrity="sha512-8ExARjWWkIllMlNzVg7JKq9RKWPlJABQUNq6YvAjE/HobctjH/NA+bSiDMDvouBVjp4Wwnf1VP1OEv7Zgjtuxw==" src="https://cdn.socket.io/4.8.1/socket.io.min.js" type="module"></script>
-  <script src="../static/js/transport.js" type="module"></script>
-  <script src="../static/js/interactive.js" type="module"></script>
+  <script src="../static/javascript/transport.js" type="module"></script>
+  <script src="../static/javascript/interactive.js" type="module"></script>
 </head>
 
 <body>
   <!-- Content -->
   <div class="container">
     <button class="secondary-action-button" id="settings-button" style="padding: 10px">
-      <img style="height: 20px; vertical-align: middle; width: 20px" src="../static/images/settings_icon.svg" />
+      <img style="height: 20px; vertical-align: middle; width: 20px" src="../static/images/user_settings_icon.svg" />
     </button>
     <input class="text-input" id="target-state" type="text" placeholder="My future is in..." />
     <button class="primary-action-button" id="submit-button" style="padding: 10px 20px">></button>
@@ -46,7 +45,7 @@
     <div class="container-row">
       <input class="text-input" id="current-state" type="text" placeholder="My residency is in..." />
       <button style="background: linear-gradient(45deg, rgba(0, 123, 255, 1), rgba(255, 107, 181, 1)); border-radius: 5px; border: none; cursor: pointer; height: 35px; width: 35px;">
-        <img style="height: 100%; width: 100%" src="../static/images/my_location_icon.svg" />
+        <img style="height: 100%; width: 100%" src="../static/images/user_location_icon.svg" />
       </button>
     </div>
     <div class="container-row">
@@ -67,7 +66,7 @@
   <!-- User Badge -->
   <div style="position: absolute; right: 10px; top: 10px">
     <button class="circular-button" id="user-profile-button" style="background-color: rgba(0, 0, 0, 0.8); height: 85px; width: 85px">
-      <img style="border-radius: 50%; height: 75px; width: 75px" src="../static/images/user_unknown_icon.svg" />
+      <img id="user-profile-image" style="border-radius: 50%; height: 75px; width: 75px" src="../static/images/user_profile_fallback_icon.svg" />
     </button>
   </div>
 </body>
