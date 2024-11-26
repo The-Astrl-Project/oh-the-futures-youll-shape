@@ -52,8 +52,8 @@ function _hydrate_webpage() {
 
   // Aggregate all found text inputs
   text_input.target_state = document.getElementById("target-state");
-  text_input.study_target = document.getElementById("study-target");
   text_input.current_state = document.getElementById("current-state");
+  text_input.majoring_target = document.getElementById("majoring-target");
 
   // Make buttons interactive
   action_buttons.submit_button.addEventListener("click", () => _on_click_event_handler("submit-button"));
