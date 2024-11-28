@@ -21,7 +21,6 @@ import quart
 from google_auth_oauthlib.flow import Flow
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
-
 # ----------------------------------------------------------------
 
 # File Docstring
@@ -32,7 +31,6 @@ from googleapiclient.discovery import build
 #
 # @author @MaxineToTheStars <https://github.com/MaxineToTheStars>
 # ----------------------------------------------------------------
-
 
 # Class Definitions
 class Server:
@@ -103,9 +101,7 @@ class Server:
         )
 
         # Configure the control flow
-        oauth_control_flow.redirect_uri = quart.url_for(
-            "_handle_route_callback", _external=True
-        )
+        oauth_control_flow.redirect_uri = quart.url_for("_handle_route_callback", _external=True)
 
         # Get the callback response
         oauth_response: Final[str] = quart.request.url
@@ -127,12 +123,7 @@ class Server:
 
     async def _handle_route_websocket(self) -> str:
         # Local method for handling the sending of websocket data
-        async def send_as_json(
-            response_type: str,
-            response_data: str,
-            response_args: dict,
-            transport_client_id: str,
-        ) -> None:
+        async def send_as_json(response_type: str, response_data: str, response_args: dict, transport_client_id: str) -> None:
             await quart.websocket.send_json(
                 {
                     "response_type": response_type,
@@ -154,9 +145,7 @@ class Server:
             # Supplied information from the client/user
             request_args: Final[dict] = incoming_data.get("request_args", None)
             # The websockets UUID
-            transport_client_id: Final[str] = incoming_data.get(
-                "transport_client_id", None
-            )
+            transport_client_id: Final[str] = incoming_data.get("transport_client_id", None)
 
             match request_type:
                 case "data":
@@ -165,46 +154,29 @@ class Server:
                             # Check if the current user is signed in
                             if quart.session.get("credentials", None) == None:
                                 # User is not logged in
-                                await send_as_json(
-                                    response_type=request_type,
-                                    response_data=request_data,
-                                    response_args=None,
-                                    transport_client_id=transport_client_id,
-                                )
+                                await send_as_json(response_type=request_type, response_data=request_data, response_args=None, transport_client_id=transport_client_id)
 
                                 # Next iteration
                                 continue
 
                             # Retrieve stored credentials
-                            credentials: Final[Credentials] = Credentials(
-                                **quart.session.get("credentials", None)
-                            )
+                            credentials: Final[Credentials] = Credentials(**quart.session.get("credentials", None))
 
                             # Build the PeopleAPI service
-                            people_api_service: Final[any] = build(
-                                "people", "v1", credentials=credentials
-                            )
+                            people_api_service: Final[any] = build("people", "v1", credentials=credentials)
 
                             # Execute an API request
-                            results: Final[any] = (
-                                people_api_service.people()
-                                .get(resourceName="people/me", personFields="photos")
-                                .execute()
-                            )
-                            image_url: Final[str] = results.get("photos", None)[0].get(
-                                "url"
-                            )
+                            results: Final[any] = people_api_service.people().get(resourceName="people/me", personFields="photos").execute()
+
+                            # Retrieve the image URL
+                            image_url: Final[str] = results.get("photos", None)[0].get("url")
 
                             # Return the user profile image
-                            await send_as_json(
-                                response_type=request_type,
-                                response_data=request_data,
-                                response_args={"url": image_url},
-                                transport_client_id=transport_client_id,
-                            )
+                            await send_as_json(response_type=request_type, response_data=request_data, response_args={"url": image_url}, transport_client_id=transport_client_id)
 
                             # Next iteration
                             continue
+
                         case "search":
                             # Next iteration
                             continue
@@ -223,9 +195,7 @@ class Server:
                             )
 
                             # Configure the redirect uri
-                            oauth_control_flow.redirect_uri = (
-                                "http://127.0.0.1:5000/callback"
-                            )
+                            oauth_control_flow.redirect_uri = "http://127.0.0.1:5000/callback"
 
                             # Generate the OAuth url and Oauth state
                             oauth_control_flow_url, oauth_control_flow_state = (
@@ -240,12 +210,7 @@ class Server:
                             quart.session["state"] = oauth_control_flow_state
 
                             # Prompt OAuth control flow on the client
-                            await send_as_json(
-                                response_type=request_type,
-                                response_data=request_data,
-                                response_args={"url": oauth_control_flow_url},
-                                transport_client_id=transport_client_id,
-                            )
+                            await send_as_json(response_type=request_type, response_data=request_data, response_args={"url": oauth_control_flow_url}, transport_client_id=transport_client_id)
 
                             # Next iteration
                             continue
@@ -256,7 +221,6 @@ class Server:
                 case _:
                     # Malformed or invalid request
                     continue
-
 
 # Script Check
 if __name__ == "__main__":

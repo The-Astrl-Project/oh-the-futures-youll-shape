@@ -59,9 +59,7 @@ function _hydrate_webpage() {
   action_buttons.submit_button.addEventListener("click", () => _on_click_event_handler("submit-button"));
   action_buttons.settings_button.addEventListener("click", () => _on_click_event_handler("settings-button"));
   action_buttons.user_profile_button.addEventListener("click", () => _on_click_event_handler("user-profile-button"));
-  action_buttons.toggle_location_button.addEventListener("click", () =>
-    _on_click_event_handler("toggle-location-button")
-  );
+  action_buttons.toggle_location_button.addEventListener("click", () => _on_click_event_handler("toggle-location-button"));
 
   // Request the current user's profile image
   send_as_json("data", "user-profile-image");
