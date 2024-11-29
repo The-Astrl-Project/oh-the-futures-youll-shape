@@ -79,8 +79,11 @@ class SearchUtils:
             The query to match
         """
 
-        # Clean up the query
-        query: Final[str] = query.strip().lower().replace(" ", ",").split(",")[0]
+        # Clean up the query and create a list of possible queries
+        possible_queries: Final[list[str]] = query.strip().lower().replace(" ", ",").split(",")
+
+        # Set the query
+        query: Final[str] = possible_queries[0] if len(possible_queries) == 1 else possible_queries[-1]
 
         # Open the CSV file
         with open(__region_data_file_path__, mode="r", encoding="utf-8") as file:
@@ -97,7 +100,7 @@ class SearchUtils:
                 city_name: Final[str] = region_row[4].strip().lower()
 
                 # Attempt to match the query
-                if state_name.startswith(query) or city_name.startswith(query):
+                if state_name.startswith(query) or city_name.startswith(query) or state_name.find(query) != -1 or city_name.find(query) != -1:
                     # Return the region row as a converted list
                     return list(region_row)
 
@@ -212,63 +215,108 @@ async def search(query: SearchQuery) -> dict:
     consolidated_data: Final[list[any]] = query.consolidate_query_options()
 
     # Declare the return dictionary
-    return_data: dict = {}
+    return_data: dict = {
+        "scholarships": {},
+        "universities": {},
+        "living_costs": {},
+    }
 
-    # Retrieve applicable scholarships
-    return_data["scholarships"] = await _search_for_scholarships(
-        target_state=(
-            consolidated_data[0][2]
-            if consolidated_data[0] is not None
-            else None
+    # Execute in "parallel" (this is actually roughly ~600ms faster)
+    data: Final[list[dict]] = await asyncio.gather(
+        _search_for_scholarships(
+            target_state=(
+                consolidated_data[0][2]
+                if consolidated_data[0] is not None
+                else None
+            ),
+            current_state=(
+                consolidated_data[1][2]
+                if consolidated_data[1] is not None
+                else None
+            ),
         ),
-        current_state=(
-            consolidated_data[1][2]
-            if consolidated_data[1] is not None
-            else None
-        ),
+        _search_for_living_costs(
+            target_city=(
+                consolidated_data[0][4]
+                if consolidated_data[0] is not None
+                else None
+            ),
+            target_state_abrv=(
+                consolidated_data[0][3]
+                if consolidated_data[0] is not None
+                else None
+            ),
+            current_city=(
+                consolidated_data[1][4]
+                if consolidated_data[1] is not None
+                else None
+            ),
+            current_state_abrv=(
+                consolidated_data[1][3]
+                if consolidated_data[1] is not None
+                else None
+            )
+        )
     )
+
+    # Store data
+    return_data["scholarships"] = data[0]
+    return_data["living_costs"] = data[1]
 
     # Log
     print(return_data)
 
 # Private Methods
+async def _util_clean_extracted_json(json_string: str) -> dict:
+    """
+    Cleans the given ``json_string``.
+
+    Parameters
+    ----------
+    json_string : str
+        A JSON string
+    """
+
+    # Try to load the given json_string
+    try:
+        # Load the given json_string
+        json.loads(json_string)
+    # Capture the exception and save it as error
+    except json.JSONDecodeError as error:
+        # Create a set of invalid characters found in the error
+        invalid_characters: Final[set] = set(error.doc[error.pos])
+
+        # Iterate through the invalid characters set
+        for character in invalid_characters:
+            # Replace the characters in the JSON string
+            json_string = json_string.replace(character, "")
+
+    # Return
+    return json.loads(json_string)
+
+async def _util_make_web_request(url: str) -> any:
+    """
+    Makes an asynchronous web request to the given ``url``.
+
+    Parameters
+    ----------
+    url : str
+        The URL to request data from
+    """
+
+    # Create a new client session
+    async with aiohttp.ClientSession(connector=aiohttp.TCPConnector(ssl=False)) as session:
+        # Set headers
+        session.headers["user-agent"] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.2903.70"
+
+        # Make the HTTP(S) request
+        async with session.get(url=url) as response:
+            # Return the response
+            return await response.content.read()
+
 async def _search_for_scholarships(target_state: str, current_state: str) -> dict:
-    # Local method for cleaning up invalid JSON characters
-    async def util_clean_extracted_json(json_string: str) -> dict:
-        # Try to load the given json_string
-        try:
-            # Load the given json_string
-            json.loads(json_string)
-        # Capture the exception and save it as error
-        except json.JSONDecodeError as error:
-            # Create a set of invalid characters found in the error
-            invalid_characters: Final[set] = set(error.doc[error.pos])
-
-            # Iterate through the invalid characters set
-            for character in invalid_characters:
-                # Replace the characters in the JSON string
-                json_string = json_string.replace(character, "")
-
-            # Replace all escape characters
-            # json_string = json_string.replace("\\", "")
-
-        # Return
-        return json.loads(json_string)
-
-    # Local method for handling the sending of an HTTP(S) request
-    async def util_make_web_request(url: str) -> any:
-        # Create a new client session
-        async with aiohttp.ClientSession(connector=aiohttp.TCPConnector(ssl=False)) as session:
-            # Set headers
-            session.headers["user-agent"] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.2903.70"
-
-            # Make the HTTP(S) request
-            async with session.get(url=url) as response:
-                # Return the response
-                return await response.content.read()
-
     # Local method for handling the parsing of scholarship data
-    async def util_extract_scholarship_information(data: any, is_gov: bool) -> dict:
+    async def _local_util_extract_scholarship_information(data: any, is_gov: bool) -> dict:
         # Declare the return dictionary
         return_data: list[dict] = []
 
@@ -291,6 +339,8 @@ async def _search_for_scholarships(target_state: str, current_state: str) -> dic
                         scholarship_row.find("div", attrs={"class": "notranslate"})
                         .get_text()
                         .strip()
+                        .replace("\n", " ")
+                        .replace("\xa0", " ")
                     )
                     # Retrieve the purpose of the scholarship
                     organization_purpose: Final[str] = (
@@ -299,6 +349,8 @@ async def _search_for_scholarships(target_state: str, current_state: str) -> dic
                         .findChildren("div", recursive=False)[2]
                         .get_text()
                         .strip()
+                        .replace("\n", " ")
+                        .replace("\xa0", " ")
                     )
 
                     # Retrieve the award type
@@ -307,14 +359,18 @@ async def _search_for_scholarships(target_state: str, current_state: str) -> dic
                         .findChild("div", recursive=False)
                         .get_text()
                         .strip()
+                        .replace("\n", " ")
+                        .replace("\xa0", " ")
                     )
 
                     # Retrieve the award amount
                     award_amount: Final[str] = (
                         scholarship_row.find("div", attrs={"class": "notranslate table-Numeric"})
                         .get_text()
-                        .replace(" ", "-")
                         .strip()
+                        .replace(" ", "-")
+                        .replace("\n", " ")
+                        .replace("\xa0", " ")
                     )
 
                     # Retrieve the submission date
@@ -322,6 +378,8 @@ async def _search_for_scholarships(target_state: str, current_state: str) -> dic
                         scholarship_row.find("td", attrs={"headers": "thD"})
                         .get_text()
                         .strip()
+                        .replace("\n", " ")
+                        .replace("\xa0", " ")
                     )
 
                     # Create JSON object
@@ -335,7 +393,7 @@ async def _search_for_scholarships(target_state: str, current_state: str) -> dic
                     }
 
                     # Clean up the JSON
-                    obj = await util_clean_extracted_json(json_string=json.dumps(obj))
+                    obj = await _util_clean_extracted_json(json_string=json.dumps(obj))
 
                     # Append to return data
                     return_data.append(obj)
@@ -347,13 +405,36 @@ async def _search_for_scholarships(target_state: str, current_state: str) -> dic
                 # Iterate through each row
                 for scholarship_row in scholarship_rows:
                     # Retrieve the permanent url
-                    permanent_url: Final[str] = scholarship_row.find("a", attrs={"class": "text-btn"})["href"].strip().replace(" ", "%20")
+                    permanent_url: Final[str] = (
+                        scholarship_row.find("a", attrs={"class": "text-btn"})["href"]
+                        .strip()
+                        .replace(" ", "%20")
+                    )
 
                     # Retrieve the organization funding the scholarship
-                    organization_name: Final[str] = scholarship_row.find("h3").get_text().strip()
+                    organization_name: Final[str] = (
+                        scholarship_row.find("h3")
+                        .get_text()
+                        .strip()
+                        .replace("\n", " ")
+                        .replace("\xa0", " ")
+                    )
 
                     # Retrieve the organization purpose
-                    organization_purpose: Final[str] = scholarship_row.find("div", attrs={"class": "info"}).find("p").get_text().strip() or scholarship_row.find("div", attrs={"class": "info"}).find("span", attr={"data-contrast": "auto"}).get_text().strip()
+                    organization_purpose: Final[str] = (
+                        scholarship_row.find("div", attrs={"class": "info"})
+                        .find("p")
+                        .get_text()
+                        .strip()
+                        .replace("\n", " ")
+                        .replace("\xa0", " ")
+                        or scholarship_row.find("div", attrs={"class": "info"})
+                        .find("span", attr={"data-contrast": "auto"})
+                        .get_text()
+                        .strip()
+                        .replace("\n", " ")
+                        .replace("\xa0", " ")
+                    )
 
                     # Hardcoded award type
                     award_type: Final[str] = "Scholarship"
@@ -375,7 +456,7 @@ async def _search_for_scholarships(target_state: str, current_state: str) -> dic
                     }
 
                     # Clean up the JSON
-                    obj = await util_clean_extracted_json(json_string=json.dumps(obj))
+                    obj = await _util_clean_extracted_json(json_string=json.dumps(obj))
 
                     # Append to return data
                     return_data.append(obj)
@@ -384,7 +465,7 @@ async def _search_for_scholarships(target_state: str, current_state: str) -> dic
         return return_data
 
     # Local method for handling the searching of scholarships on the federal level
-    async def util_search_for_federal_scholarships(return_data: dict) -> dict:
+    async def _local_search_for_federal_scholarships(return_data: dict) -> dict:
         if target_state is not None:
             # Format the URL
             formatted_url_gov: Final[str] = (
@@ -394,7 +475,7 @@ async def _search_for_scholarships(target_state: str, current_state: str) -> dic
             )
 
             # Execute a web request
-            response: Final[any] = await util_make_web_request(url=formatted_url_gov)
+            response: Final[any] = await _util_make_web_request(url=formatted_url_gov)
 
             # Check is a valid response was returned
             if response is None:
@@ -405,7 +486,7 @@ async def _search_for_scholarships(target_state: str, current_state: str) -> dic
                 return
 
             # Parse the data and store the results
-            return_data["target_state"]["gov"] = await util_extract_scholarship_information(data=response, is_gov=True)
+            return_data["target_state"]["gov"] = await _local_util_extract_scholarship_information(data=response, is_gov=True)
 
         if current_state is not None:
             # Format the URL
@@ -416,7 +497,7 @@ async def _search_for_scholarships(target_state: str, current_state: str) -> dic
             )
 
             # Execute a web request
-            response: Final[any] = await util_make_web_request(url=formatted_url_gov)
+            response: Final[any] = await _util_make_web_request(url=formatted_url_gov)
 
             # Check is a valid response was returned
             if response is None:
@@ -427,9 +508,10 @@ async def _search_for_scholarships(target_state: str, current_state: str) -> dic
                 return
 
             # Parse the data and store the results
-            return_data["current_state"]["gov"] = await util_extract_scholarship_information(data=response, is_gov=True)
+            return_data["current_state"]["gov"] = await _local_util_extract_scholarship_information(data=response, is_gov=True)
 
-    async def util_search_for_organizational_scholarships(return_data: dict) -> dict:
+    # Local method for handling the searching of scholarships on the organizational level
+    async def _local_search_for_organizational_scholarships(return_data: dict) -> dict:
         if target_state is not None:
             for page_number in range(0, 10):
                 # Format the URL
@@ -440,7 +522,7 @@ async def _search_for_scholarships(target_state: str, current_state: str) -> dic
                 )
 
                 # Execute a web request
-                response: Final[any] = await util_make_web_request(url=formatted_url_org)
+                response: Final[any] = await _util_make_web_request(url=formatted_url_org)
 
                 # Check is a valid response was returned
                 if response is None:
@@ -448,7 +530,7 @@ async def _search_for_scholarships(target_state: str, current_state: str) -> dic
                     break
 
                 # Parse the data
-                parsed_data: Final[list[dict]] = await util_extract_scholarship_information(data=response, is_gov=False)
+                parsed_data: Final[list[dict]] = await _local_util_extract_scholarship_information(data=response, is_gov=False)
 
                 # Check if parsed data has any scholarships
                 if len(parsed_data) == 0:
@@ -468,7 +550,7 @@ async def _search_for_scholarships(target_state: str, current_state: str) -> dic
                 )
 
                 # Execute a web request
-                response: Final[any] = await util_make_web_request(url=formatted_url_org)
+                response: Final[any] = await _util_make_web_request(url=formatted_url_org)
 
                 # Check is a valid response was returned
                 if response is None:
@@ -476,7 +558,7 @@ async def _search_for_scholarships(target_state: str, current_state: str) -> dic
                     break
 
                 # Parse the data
-                parsed_data: Final[list[dict]] = await util_extract_scholarship_information(data=response, is_gov=False)
+                parsed_data: Final[list[dict]] = await _local_util_extract_scholarship_information(data=response, is_gov=False)
 
                 # Check if parsed data has any scholarships
                 if len(parsed_data) == 0:
@@ -500,9 +582,129 @@ async def _search_for_scholarships(target_state: str, current_state: str) -> dic
 
     # Run in "parallel"
     await asyncio.gather(
-        util_search_for_federal_scholarships(return_data=return_data),
-        util_search_for_organizational_scholarships(return_data=return_data)
+        _local_search_for_federal_scholarships(return_data=return_data),
+        _local_search_for_organizational_scholarships(return_data=return_data)
     )
+
+    # Return
+    return return_data
+
+async def _search_for_living_costs(target_city: str, target_state_abrv: str, current_city: str, current_state_abrv: str) -> dict:
+    # Local method for handling the extraction of living costs
+    async def _local_util_extract_living_costs(data: any) -> list[dict]:
+        # Declare return data
+        return_data: list[dict] = []
+
+        # Configure the parser
+        parser: Final[BeautifulSoup] = BeautifulSoup(markup=data, features="html.parser")
+
+        # Retrieve the costs row
+        costs_rows = parser.find("table", attrs={"class": "data_wide_table new_bar_table cost_comparison_table"}).find_all("tr")
+
+        # Iterate through each row
+        for cost_row in costs_rows:
+            # Check if the row has a <td> tag as a child (skips the headers)
+            if cost_row.find("td") is None:
+                # Next iteration
+                continue
+
+            # All the data is nested so this is necessary
+            data_entries = cost_row.find_all("td")
+
+            # Try to parse table data
+            try:
+                # Retrieve the entry name
+                entry_name: Final[str] = (
+                    cost_row.find("td")
+                    .get_text()
+                    .strip()
+                    .replace("\n", " ")
+                    .replace("\xa0", " ")
+                )
+
+                # Retrieve current state cost
+                current_state_cost: Final[str] = (
+                    data_entries[1]
+                    .find("span")
+                    .get_text()
+                    .strip()
+                    .replace("\n", " ")
+                    .replace("\xa0", " ")
+                )
+
+                # Retrieve target state cost
+                target_state_cost: Final[str] = (
+                    data_entries[2]
+                    .find("span")
+                    .get_text()
+                    .strip()
+                    .replace("\n", " ")
+                    .replace("\xa0", " ")
+                )
+
+                # Retrieve cost difference
+                cost_difference: Final[str] = (
+                    data_entries[3]
+                    .find("span")
+                    .get_text()
+                    .strip()
+                    .replace("\n", " ")
+                    .replace("\xa0", " ")
+                )
+
+                # Create JSON object
+                obj: dict = {
+                    "entry_name": entry_name,
+                    "current_state_cost": current_state_cost,
+                    "target_state_cost": target_state_cost,
+                    "cost_difference": cost_difference,
+                }
+
+                # Clean up the JSON
+                obj = await _util_clean_extracted_json(json_string=json.dumps(obj))
+
+                # Append to return data
+                return_data.append(obj)
+            # Reached the end of the table
+            except Exception as e:
+                # Exit the loop
+                break
+
+        # Return
+        return return_data
+
+    # Local method for searching and retrieving living costs
+    async def _local_util_search_for_living_costs(return_data: dict) -> dict:
+        # Format the URL
+        formatted_url_costs: Final[str] = (
+            __available_web__indexers__.get("costs", None)
+            .get("numbeo", None)
+            .format(target_city=target_city, target_state_abrv=target_state_abrv, current_city=current_city, current_state_abrv=current_state_abrv)
+        )
+
+        # Execute a web request
+        response: Final[any] = await _util_make_web_request(url=formatted_url_costs)
+
+        # Check is a valid response was returned
+        if response is None:
+            # Invalid server response
+            return return_data
+
+        # Parse the data
+        parsed_data: Final[list[dict]] = await _local_util_extract_living_costs(data=response)
+
+        # Append
+        return_data["costs"] = parsed_data
+
+    # Declare the return dictionary
+    return_data: dict = {"costs": []}
+
+    # Sanity check
+    if None in [target_city, target_state_abrv, current_city, current_state_abrv]:
+        return return_data
+
+    # Execute
+    await _local_util_search_for_living_costs(return_data=return_data)
 
     # Return
     return return_data
@@ -512,9 +714,9 @@ if __name__ == "__main__":
     asyncio.run(
         search(
             SearchQuery(
-                target_state=("california"),
-                current_state=("florida"),
-                majoring_target="computer science",
+                target_state=("florida florida miami"),
+                current_state=("new new york"),
+                majoring_target="professional programmer",
                 use_queer_scoring=True,
             )
         )
