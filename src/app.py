@@ -13,9 +13,9 @@
 # ----------------------------------------------------------------
 from os import environ
 from typing import Final
-
 # ---
-
+from middleware.statistics import StatisticsMiddleware
+from modules.bot import SearchUtils, SearchQuery, search
 # ---
 import quart
 from google_auth_oauthlib.flow import Flow
@@ -57,6 +57,9 @@ class Server:
 
         # Configure the Quart app
         self._app.config.update(self._quart_configuration)
+
+        # Apply middleware
+        self._app.asgi_app = StatisticsMiddleware(self._app.asgi_app)
 
         # Configure the server routes
         self._app.route("/", methods=["GET"])(self._handle_route_home)
@@ -154,7 +157,12 @@ class Server:
                             # Check if the current user is signed in
                             if quart.session.get("credentials", None) == None:
                                 # User is not logged in
-                                await send_as_json(response_type=request_type, response_data=request_data, response_args=None, transport_client_id=transport_client_id)
+                                await send_as_json(
+                                    response_type=request_type,
+                                    response_data=request_data,
+                                    response_args={"url": "../static/images/user_profile_fallback_icon.svg"},
+                                    transport_client_id=transport_client_id,
+                                )
 
                                 # Next iteration
                                 continue
@@ -169,10 +177,15 @@ class Server:
                             results: Final[any] = people_api_service.people().get(resourceName="people/me", personFields="photos").execute()
 
                             # Retrieve the image URL
-                            image_url: Final[str] = results.get("photos", None)[0].get("url")
+                            image_url: Final[str] = results.get("photos", None)[0].get("url", "../static/images/user_profile_fallback_icon.svg")
 
                             # Return the user profile image
-                            await send_as_json(response_type=request_type, response_data=request_data, response_args={"url": image_url}, transport_client_id=transport_client_id)
+                            await send_as_json(
+                                response_type=request_type,
+                                response_data=request_data,
+                                response_args={"url": image_url},
+                                transport_client_id=transport_client_id,
+                            )
 
                             # Next iteration
                             continue
@@ -180,6 +193,35 @@ class Server:
                         case "search":
                             # Next iteration
                             continue
+
+                        case "autocomplete":
+                            # Run an autocomplete request on the given query
+                            autocomplete_results: Final[list[str]] = SearchUtils.autocomplete_region_from_query(query=request_args.get("input", None))
+
+                            # Check if a valid result was return
+                            if autocomplete_results is None:
+                                # Notify of invalid query
+                                await send_as_json(
+                                    response_type=request_type,
+                                    response_data=request_data,
+                                    response_args={"results": "Invalid!", "target": request_args.get("target", None)},
+                                    transport_client_id=transport_client_id,
+                                )
+
+                                # Next iteration
+                                continue
+
+                            # Return autocomplete results
+                            await send_as_json(
+                                response_type=request_type,
+                                response_data=request_data,
+                                response_args={"results": f"{autocomplete_results[4]}, {autocomplete_results[2]}", "target": request_args.get("target", None)},
+                                transport_client_id=transport_client_id,
+                            )
+
+                            # Next iteration
+                            continue
+
                 case "oauth":
                     match request_data:
                         case "user-register":
@@ -200,9 +242,9 @@ class Server:
                             # Generate the OAuth url and Oauth state
                             oauth_control_flow_url, oauth_control_flow_state = (
                                 oauth_control_flow.authorization_url(
+                                    prompt="consent",
                                     access_type="offline",
                                     include_granted_scopes="true",
-                                    prompt="consent",
                                 )
                             )
 
@@ -210,7 +252,12 @@ class Server:
                             quart.session["state"] = oauth_control_flow_state
 
                             # Prompt OAuth control flow on the client
-                            await send_as_json(response_type=request_type, response_data=request_data, response_args={"url": oauth_control_flow_url}, transport_client_id=transport_client_id)
+                            await send_as_json(
+                                response_type=request_type,
+                                response_data=request_data,
+                                response_args={"url": oauth_control_flow_url},
+                                transport_client_id=transport_client_id,
+                            )
 
                             # Next iteration
                             continue

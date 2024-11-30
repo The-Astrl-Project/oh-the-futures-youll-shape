@@ -28,7 +28,7 @@ import { send_as_json } from "./transport.js";
 // Constants
 
 // Public Variables
-let text_input = {};
+let text_inputs = {};
 let action_buttons = {};
 
 // Private Variables
@@ -51,15 +51,19 @@ function _hydrate_webpage() {
   action_buttons.toggle_location_button = document.getElementById("toggle-location-button");
 
   // Aggregate all found text inputs
-  text_input.target_state = document.getElementById("target-state");
-  text_input.current_state = document.getElementById("current-state");
-  text_input.majoring_target = document.getElementById("majoring-target");
+  text_inputs.target_state = document.getElementById("target-state");
+  text_inputs.current_state = document.getElementById("current-state");
+  text_inputs.majoring_target = document.getElementById("majoring-target");
 
   // Make buttons interactive
-  action_buttons.submit_button.addEventListener("click", () => _on_click_event_handler("submit-button"));
-  action_buttons.settings_button.addEventListener("click", () => _on_click_event_handler("settings-button"));
-  action_buttons.user_profile_button.addEventListener("click", () => _on_click_event_handler("user-profile-button"));
-  action_buttons.toggle_location_button.addEventListener("click", () => _on_click_event_handler("toggle-location-button"));
+  action_buttons.submit_button.addEventListener("click", (_) => _on_click_event_handler("submit-button"));
+  action_buttons.settings_button.addEventListener("click", (_) => _on_click_event_handler("settings-button"));
+  action_buttons.user_profile_button.addEventListener("click", (_) => _on_click_event_handler("user-profile-button"));
+  action_buttons.toggle_location_button.addEventListener("click", (_) => _on_click_event_handler("toggle-location-button"));
+
+  // Make text boxes interactive
+  text_inputs.target_state.addEventListener("change", (_) => _on_change_event_handler("target-state"));
+  text_inputs.current_state.addEventListener("change", (_) => _on_change_event_handler("current-state"));
 
   // Request the current user's profile image
   send_as_json("data", "user-profile-image");
@@ -112,6 +116,25 @@ function _on_click_event_handler(from_component) {
   }
 }
 
+function _on_change_event_handler(from_component) {
+  // Switch on component
+  switch (from_component) {
+    case "target-state":
+      // Send autocomplete request
+      send_as_json("data", "autocomplete", { input: text_inputs.target_state.value, target: "target-state" });
+
+      // Exit
+      break;
+
+    case "current-state":
+      // Send autocomplete request
+      send_as_json("data", "autocomplete", { input: text_inputs.current_state.value, target: "current-state" });
+
+      // Exit
+      break;
+  }
+}
+
 window.addEventListener("transport_connected", (_) => {
   // Hydrate the webpage
   _hydrate_webpage();
@@ -133,16 +156,32 @@ window.addEventListener("transport_server_message", (args) => {
     case "data":
       switch (response_data) {
         case "user-profile-image":
-          // Check that a url was returned
-          if (response_args !== null) {
-            // Replace the user badge with the new image
-            document.getElementById("user-profile-image").src = `${response_args.url}`;
+          // Replace the user badge with the new image
+          document.getElementById("user-profile-image").src = `${response_args.url}`;
 
-            // Exit
-            break;
+          // Exit
+          break;
+
+        case "autocomplete":
+          // Extract the autocomplete target and results
+          const text = response_args.results;
+          const target = response_args.target;
+
+          // Match the target
+          switch (target) {
+            case "target-state":
+              // Update text
+              text_inputs.target_state.value = text;
+
+              // Break
+              break;
+            case "current-state":
+              // Update text
+              text_inputs.current_state.value = text;
+
+              // Break
+              break;
           }
-          // Fallback to default badge
-          document.getElementById("user-profile-image").src = "../static/images/user_profile_fallback_icon.svg";
 
           // Exit
           break;

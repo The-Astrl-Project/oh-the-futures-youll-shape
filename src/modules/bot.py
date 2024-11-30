@@ -225,38 +225,26 @@ async def search(query: SearchQuery) -> dict:
     data: Final[list[dict]] = await asyncio.gather(
         _search_for_scholarships(
             target_state=(
-                consolidated_data[0][2]
-                if consolidated_data[0] is not None
-                else None
+                consolidated_data[0][2] if consolidated_data[0] is not None else None
             ),
             current_state=(
-                consolidated_data[1][2]
-                if consolidated_data[1] is not None
-                else None
+                consolidated_data[1][2] if consolidated_data[1] is not None else None
             ),
         ),
         _search_for_living_costs(
             target_city=(
-                consolidated_data[0][4]
-                if consolidated_data[0] is not None
-                else None
+                consolidated_data[0][4] if consolidated_data[0] is not None else None
             ),
             target_state_abrv=(
-                consolidated_data[0][3]
-                if consolidated_data[0] is not None
-                else None
+                consolidated_data[0][3] if consolidated_data[0] is not None else None
             ),
             current_city=(
-                consolidated_data[1][4]
-                if consolidated_data[1] is not None
-                else None
+                consolidated_data[1][4] if consolidated_data[1] is not None else None
             ),
             current_state_abrv=(
-                consolidated_data[1][3]
-                if consolidated_data[1] is not None
-                else None
-            )
-        )
+                consolidated_data[1][3] if consolidated_data[1] is not None else None
+            ),
+        ),
     )
 
     # Store data
@@ -314,6 +302,7 @@ async def _util_make_web_request(url: str) -> any:
             # Return the response
             return await response.content.read()
 
+
 async def _search_for_scholarships(target_state: str, current_state: str) -> dict:
     # Local method for handling the parsing of scholarship data
     async def _local_util_extract_scholarship_information(data: any, is_gov: bool) -> dict:
@@ -327,12 +316,23 @@ async def _search_for_scholarships(target_state: str, current_state: str) -> dic
         match is_gov:
             case True:
                 # Retrieve the scholarship rows
-                scholarship_rows = parser.find("table", attrs={"class": "cos-table-responsive"}).find("tbody").find_all("tr")
+                scholarship_rows = (
+                    parser.find("table", attrs={"class": "cos-table-responsive"})
+                    .find("tbody")
+                    .find_all("tr")
+                )
 
                 # Iterate though each row
                 for scholarship_row in scholarship_rows:
                     # Retrieve the permanent URL
-                    permanent_url: Final[str] = f"https://www.careeronestop.org{scholarship_row.find("div", attrs={"class": "notranslate detailPageLink"}).find("a")["href"]}".strip().replace(" ", "%20")
+                    permanent_url: Final[str] = (
+                        f"https://www.careeronestop.org{
+                            scholarship_row.find("div", attrs={"class": "notranslate detailPageLink"})
+                            .find("a")["href"]
+                            .strip()
+                            .replace(" ", "%20")
+                        }"
+                    )
 
                     # Retrieve the organization funding the scholarship
                     organization_name: Final[str] = (
@@ -400,7 +400,10 @@ async def _search_for_scholarships(target_state: str, current_state: str) -> dic
 
             case False:
                 # Retrieve the scholarship rows
-                scholarship_rows = parser.find("div", attrs={"class": "facetwp-template"}).find_all("article", attrs={"class": "scholarship"})
+                scholarship_rows = (
+                    parser.find("div", attrs={"class": "facetwp-template"})
+                    .find_all("article", attrs={"class": "scholarship"})
+                )
 
                 # Iterate through each row
                 for scholarship_row in scholarship_rows:
@@ -583,7 +586,7 @@ async def _search_for_scholarships(target_state: str, current_state: str) -> dic
     # Run in "parallel"
     await asyncio.gather(
         _local_search_for_federal_scholarships(return_data=return_data),
-        _local_search_for_organizational_scholarships(return_data=return_data)
+        _local_search_for_organizational_scholarships(return_data=return_data),
     )
 
     # Return
@@ -679,7 +682,12 @@ async def _search_for_living_costs(target_city: str, target_state_abrv: str, cur
         formatted_url_costs: Final[str] = (
             __available_web__indexers__.get("costs", None)
             .get("numbeo", None)
-            .format(target_city=target_city, target_state_abrv=target_state_abrv, current_city=current_city, current_state_abrv=current_state_abrv)
+            .format(
+                target_city=target_city,
+                target_state_abrv=target_state_abrv,
+                current_city=current_city,
+                current_state_abrv=current_state_abrv,
+            )
         )
 
         # Execute a web request
