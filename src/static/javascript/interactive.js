@@ -86,6 +86,9 @@ function _on_click_event_handler(from_component) {
         use_queer_scoring: use_queer_scoring,
       });
 
+      // Alert the user
+      alert("Your request has been sent!\n*Cool animation here*\nplease don't blow up my server");
+
       // Exit
       break;
 
@@ -194,6 +197,21 @@ window.addEventListener("transport_server_message", (args) => {
             case "current-state":
               // Update text
               text_inputs.current_state.value = text;
+
+              // Break
+              break;
+          }
+
+        case "search":
+          // Extract the response
+          const response = response_args.response;
+
+          // Match the response message
+          switch (response) {
+            // Invalid session
+            case "INVALID_SESSION":
+              // Alert the user to login to their Google account
+              alert("In order to use this website you must be signed in to a Google account!");
 
               // Break
               break;
