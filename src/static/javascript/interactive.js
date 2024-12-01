@@ -147,8 +147,10 @@ window.addEventListener("transport_server_message", (args) => {
 
   // Data response or OAuth response?
   const response_type = args.response_type;
+
   // What specific data was returned
   const response_data = args.response_data;
+
   // Supplied information from the server
   const response_args = args.response_args;
 

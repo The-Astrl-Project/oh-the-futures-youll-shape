@@ -39,7 +39,7 @@ class Server:
     # Interfaces
 
     # Constants
-    __version__: Final[str] = "0.2.0-DEV"
+    __version__: Final[str] = "0.3.0-DEV"
 
     # Public Variables
 
@@ -143,10 +143,13 @@ class Server:
 
             # Data request or OAuth request?
             request_type: Final[str] = incoming_data.get("request_type", None)
+
             # What specific data are we looking for
             request_data: Final[str] = incoming_data.get("request_data", None)
+
             # Supplied information from the client/user
             request_args: Final[dict] = incoming_data.get("request_args", None)
+
             # The websockets UUID
             transport_client_id: Final[str] = incoming_data.get("transport_client_id", None)
 
@@ -174,7 +177,11 @@ class Server:
                             people_api_service: Final[any] = build("people", "v1", credentials=credentials)
 
                             # Execute an API request
-                            results: Final[any] = people_api_service.people().get(resourceName="people/me", personFields="photos").execute()
+                            results: Final[any] = (
+                                people_api_service.people()
+                                .get(resourceName="people/me", personFields="photos")
+                                .execute()
+                            )
 
                             # Retrieve the image URL
                             image_url: Final[str] = results.get("photos", None)[0].get("url", "../static/images/user_profile_fallback_icon.svg")
@@ -195,6 +202,11 @@ class Server:
                             continue
 
                         case "autocomplete":
+                            # Check if an empty string was sent
+                            if len(request_args.get("input", "").strip()) == 0:
+                                # Don't even bother to parse
+                                continue
+
                             # Run an autocomplete request on the given query
                             autocomplete_results: Final[list[str]] = SearchUtils.autocomplete_region_from_query(query=request_args.get("input", None))
 
