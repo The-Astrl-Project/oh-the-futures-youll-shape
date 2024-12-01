@@ -48,6 +48,9 @@ __available_web__indexers__: Final[dict] = {
     "living_costs": {
         "numbeo": "https://www.numbeo.com/cost-of-living/compare_cities.jsp?country1=United+States&city1={current_city}%2C+{current_state_abrv}&country2=United+States&city2={target_city}%2C+{target_state_abrv}"
     },
+    "queer_scoring": {
+        "lgbtmap": "https://www.lgbtmap.org/equality_maps/profile_state/{mixed_state_abrv}",
+    },
 }
 
 # Public Variables
@@ -81,6 +84,11 @@ class SearchUtils:
             The query to match
         """
 
+        # Check if a blank string was just passed
+        if len(query.strip()) == 0:
+            # Return None
+            return None
+
         # Clean up the query and create a list of possible queries
         possible_queries: Final[list[str]] = query.strip().lower().replace(" ", ",").split(",")
 
@@ -109,7 +117,7 @@ class SearchUtils:
             # No match found
             file.close()
 
-        # Return null
+        # Return None
         return None
 
     def autocomplete_major_from_query(query: str) -> str:
@@ -144,22 +152,22 @@ class SearchQuery:
 
     # Private Variables
     _search_query: dict = {
-        "target_state": tuple[str, str],
-        "current_state": tuple[str, str],
+        "target_state": list[str],
+        "current_state": list[str],
         "majoring_target": str,
         "use_queer_scoring": bool,
     }
 
     # Constructor
-    def __init__(self, target_state: list[str], current_state: list[str], majoring_target: str, use_queer_scoring: bool) -> None:
+    def __init__(self, target_state: str, current_state: str, majoring_target: str, use_queer_scoring: bool) -> None:
         """
         Instances a ``SearchQuery`` object that holds relevant user inputted data.
 
         Parameters
         ----------
-        target_state : tuple[str, str]
+        target_state : str
             The state/region the user wants to study in
-        current_state : tuple[str, str]
+        current_state : str
             The state/region the user currently resides in
         majoring_target : str
             The major the user plans to achieve
@@ -259,18 +267,27 @@ async def search(query: SearchQuery) -> dict:
                 consolidated_data[1][3] if consolidated_data[1] is not None else None
             ),
         ),
+        _search_for_queer_scoring(
+            target_state_abrv=(
+                consolidated_data[0][3] if consolidated_data[0] is not None else None
+            ),
+            current_state_abrv=(
+                consolidated_data[1][3] if consolidated_data[1] is not None else None
+            ),
+            use_queer_scoring=(
+                consolidated_data[3] if consolidated_data[3] is not None else False
+            ),
+        ),
     )
 
     # Store data
     return_data["scholarships"] = data[0]
     return_data["universities"] = data[1]
     return_data["living_costs"] = data[2]
+    return_data["queer_scoring"] = data[3]
 
-    # Dump data into a file
-    open("out.json", "a").close()
-    with open("out.json", "w") as json_file:
-        json.dump(return_data, json_file)
-        json_file.close()
+    # Return
+    return return_data
 
 # Private Methods
 async def _clean_and_verify_json(json_string: str) -> dict:
@@ -302,7 +319,9 @@ async def _clean_and_verify_json(json_string: str) -> dict:
 
 async def _standard_fetch(url: str) -> any:
     """
-    Makes an asynchronous web request to the given ``url``.
+    Makes an asynchronous web request to the given ``url`` via
+    aiohttp. This is a quick request but can be blocked by
+    anti-web-scraping measures. (ie: Client-Side hydration)
 
     Parameters
     ----------
@@ -370,7 +389,8 @@ async def _headless_fetch(url: str) -> any:
 async def _search_for_scholarships(target_state: str, current_state: str) -> dict:
     async def _extract(web_response: any, web_source: str) -> list[dict]:
         """
-        Handles the extraction of scholarship information from the given ``web_response``.
+        Handles the extraction of university information from the given ``web_response``.
+        Site specific parsing is handled via the ``web_source`` parameter.
 
         Parameters
         ----------
@@ -543,13 +563,17 @@ async def _search_for_scholarships(target_state: str, current_state: str) -> dic
                         )
                     )
 
+            # Source: XYZ
+            case _:
+                pass
+
         # Return the extracted scholarship information
         return return_data
 
     async def _search(return_data: dict) -> None:
         """
-        Handles the searching of scholarships based on the given ``SearchQuery``
-        parameters.
+        Handles the searching of scholarships based on the given parent
+        function's params.
 
         Parameters
         ----------
@@ -573,7 +597,7 @@ async def _search_for_scholarships(target_state: str, current_state: str) -> dic
 
                 # Check if a valid response was returned
                 if response is None:
-                    # No data found set as null
+                    # No data found ||Set as None
                     return_data["target_state"]["careeronestop"] = None
                 else:
                     # Parse the data and store the results
@@ -594,7 +618,7 @@ async def _search_for_scholarships(target_state: str, current_state: str) -> dic
 
                 # Check if a valid response was returned
                 if response is None:
-                    # No data found set as null
+                    # No data found ||Set as None
                     return_data["current_state"]["careeronestop"] = None
                 else:
                     # Parse the data and store the results
@@ -730,6 +754,7 @@ async def _search_for_universities(target_state_abrv: str, current_state_abrv: s
 
                 # Iterate through each table row
                 for university_entry in university_table:
+
                     async def _college_board_parsing() -> str:
                         """College Board specific parsing."""
 
@@ -857,6 +882,10 @@ async def _search_for_universities(target_state_abrv: str, current_state_abrv: s
             case "usnews":
                 pass
 
+            # Source: XYZ
+            case _:
+                pass
+
         # Return the extracted university information
         return return_data
 
@@ -886,7 +915,7 @@ async def _search_for_universities(target_state_abrv: str, current_state_abrv: s
 
             # Check if a valid response was returned
             if response is None:
-                # No data found set as null
+                # No data found set as None
                 return_data["target_state"]["collegeboard"] = None
             else:
                 # Parse the data
@@ -915,7 +944,7 @@ async def _search_for_universities(target_state_abrv: str, current_state_abrv: s
 
             # Check if a valid response was returned
             if response is None:
-                # No data found set as null
+                # No data found set as None
                 return_data["current_state"]["collegeboard"] = None
             else:
                 # Parse the data
@@ -950,7 +979,8 @@ async def _search_for_universities(target_state_abrv: str, current_state_abrv: s
 async def _search_for_living_costs(target_city: str, target_state_abrv: str, current_city: str, current_state_abrv: str) -> dict:
     async def _extract(web_response: any, web_source: str) -> list[dict]:
         """
-        Handles the extraction of living cost information from the given ``web_response``.
+        Handles the extraction of university information from the given ``web_response``.
+        Site specific parsing is handled via the ``web_source`` parameter.
 
         Parameters
         ----------
@@ -1056,8 +1086,8 @@ async def _search_for_living_costs(target_city: str, target_state_abrv: str, cur
 
     async def _search(return_data: dict) -> None:
         """
-        Handles the searching of living costs based on the given ``SearchQuery``
-        parameters.
+        Handles the searching of scholarships based on the given parent
+        function's params.
 
         Parameters
         ----------
@@ -1080,7 +1110,7 @@ async def _search_for_living_costs(target_city: str, target_state_abrv: str, cur
 
             # Check if a valid response was returned
             if response is None:
-                # No data found set as null
+                # No data found set as None
                 return_data["numbeo"] = None
             else:
                 # Parse the data and store the results
@@ -1097,14 +1127,174 @@ async def _search_for_living_costs(target_city: str, target_state_abrv: str, cur
     # Return
     return return_data
 
+async def _search_for_queer_scoring(target_state_abrv: str, current_state_abrv: str, use_queer_scoring: bool) -> dict:
+    async def _extract(web_response: any, web_source: str) -> list[dict]:
+        """
+        Handles the extraction of university information from the given ``web_response``.
+        Site specific parsing is handled via the ``web_source`` parameter.
+
+        Parameters
+        ----------
+        web_response : any
+            An HTML string or similar
+
+        web_source : str
+            A valid string identifier for where the web response came from
+        """
+
+        # Declare the return object
+        return_data: list[dict] = []
+
+        # Configure the parser
+        parser: Final[BeautifulSoup] = BeautifulSoup(markup=web_response, features="lxml")
+
+        # Switch on web source
+        match web_source:
+            # Source: https://www.lgbtmap.org/equality_maps/profile_state/FL
+            case "lgbtmap":
+                # Retrieve the quick facts row
+                quick_facts_row = (
+                    parser.find("div", attrs={"class": "row quickfacts"})
+                    .find("div", attrs={"class": "col-xs-12"})
+                    .find_all("div")
+                )
+
+                # Retrieve the policy tally row
+                policy_tally_row = (
+                    parser.find("div", attrs={"class": "policytally"})
+                    .find("div", attrs={"class": "col-xs-12 col-md-7"})
+                    .find_all("div", attrs={"class": "row policyboxes"})
+                )
+
+                # Declare the quick facts list to store the found quick facts
+                quick_facts_list: list[str] = []
+
+                # Declare the policy tally list to store the found policy tallies
+                policy_tally_list: list[str] = []
+
+                # Iterate through each entry
+                for quick_facts_entry in quick_facts_row:
+                    # Retrieve the statistical data and append it
+                    quick_facts_list.append(
+                        quick_facts_entry.find("span")
+                        .get_text()
+                        .strip()
+                        .replace("\n", " ")
+                        .replace("\xa0", " ")
+                    )
+
+                for policy_tally_entry in policy_tally_row:
+                    for entry in policy_tally_entry.find_all("span", attrs={"class": "tally"}):
+                        policy_tally_list.append(
+                            entry.get_text()
+                            .strip()
+                            .replace("\n", " ")
+                            .replace("\xa0", " ")
+                        )
+
+                # Clean up the JSON and append it to the return object
+                return_data.append(
+                    await _clean_and_verify_json(
+                        json_string=json.dumps(
+                            {
+                                "queer_adults_percentage": quick_facts_list[0],
+                                "queer_youth_population": quick_facts_list[1],
+                                "queer_workforce_percentage": quick_facts_list[2],
+                                "queer_worker_percentage": quick_facts_list[3],
+                                "queer_adults_with_children_percentage": quick_facts_list[4],
+                                "sexual_orientation_policy_score": policy_tally_list[0],
+                                "gender_identity_policy_score": policy_tally_list[1],
+                                "overall_policy_score": policy_tally_list[2],
+                            }
+                        )
+                    )
+                )
+
+            # Source: XYZ
+            case _:
+                pass
+
+        # Return the extracted queer scoring
+        return return_data
+
+    async def _search(return_data: dict) -> None:
+        """
+        Handles the searching of scholarships based on the given parent
+        function's params.
+
+        Parameters
+        ----------
+        return_data : dict
+            A reference to the return data object
+        """
+
+        # Check the target state first
+        if target_state_abrv is not None:
+            # Format the URL
+            formatted_url_lgbtmap: Final[str] = (
+                __available_web__indexers__.get("queer_scoring", None)
+                .get("lgbtmap", None)
+                .format(mixed_state_abrv=target_state_abrv)
+                .replace(" ", "%20")
+            )
+
+            # Execute a web request
+            response: Final[any] = await _standard_fetch(url=formatted_url_lgbtmap)
+
+            # Check if a valid response was returned
+            if response is None:
+                # No data found || Set as None
+                return_data["target_state"]["lgbtmap"] = None
+            else:
+                # Parse the data and store the results
+                return_data["target_state"]["lgbtmap"] = await _extract(web_response=response, web_source="lgbtmap")
+
+        # Check the current state next
+        if current_state_abrv is not None:
+            # Format the URL
+            formatted_url_lgbtmap: Final[str] = (
+                __available_web__indexers__.get("queer_scoring", None)
+                .get("lgbtmap", None)
+                .format(mixed_state_abrv=current_state_abrv)
+                .replace(" ", "%20")
+            )
+
+            # Execute a web request
+            response: Final[any] = await _standard_fetch(url=formatted_url_lgbtmap)
+
+            # Check if a valid response was returned
+            if response is None:
+                # No data found || Set as None
+                return_data["current_state"]["lgbtmap"] = None
+            else:
+                # Parse the data and store the results
+                return_data["current_state"]["lgbtmap"] = await _extract(web_response=response, web_source="lgbtmap")
+
+    # Declare the return dictionary
+    return_data: dict = {
+        "target_state": {
+            "lgbtmap": [],
+        },
+        "current_state": {
+            "lgbtmap": [],
+        },
+    }
+
+    # Execute
+    if use_queer_scoring == True:
+        await _search(return_data=return_data)
+
+    # Return
+    return return_data
+
 # Script Check
 if __name__ == "__main__":
     asyncio.run(
         search(
             SearchQuery(
-                target_state=("florida florida miami"),
-                current_state=("new new york"),
-                majoring_target="",
+                target_state="New York",
+                current_state="Florida",
+                majoring_target="Computer Science",
                 use_queer_scoring=True,
             )
         )

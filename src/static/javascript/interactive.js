@@ -72,6 +72,20 @@ function _hydrate_webpage() {
 function _on_click_event_handler(from_component) {
   switch (from_component) {
     case "submit-button":
+      // Extract all applicable data
+      const target_state = text_inputs.target_state.value;
+      const current_state = text_inputs.current_state.value;
+      const majoring_target = text_inputs.majoring_target.value;
+      const use_queer_scoring = action_buttons.toggle_queer_scoring.checked;
+
+      // Send to server for validation and submission
+      send_as_json("data", "search", {
+        target_state: target_state,
+        current_state: current_state,
+        majoring_target: majoring_target,
+        use_queer_scoring: use_queer_scoring,
+      });
+
       // Exit
       break;
 

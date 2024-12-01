@@ -13,6 +13,7 @@
 # ----------------------------------------------------------------
 from os import environ
 from typing import Final
+from random import randint
 # ---
 from middleware.statistics import StatisticsMiddleware
 from modules.bot import SearchUtils, SearchQuery, search
@@ -79,6 +80,170 @@ class Server:
     # Private Static Methods
 
     # Private Inherited Methods
+    async def _util_write_to_sheet(self, return_data: dict, target_state: str, current_state: str) -> None:
+        # Retrieve stored credentials
+        credentials: Final[Credentials] = Credentials(**quart.session.get("credentials", None))
+
+        # Build the Google Sheets API service
+        sheets_service = build("sheets", "v4", credentials=credentials)
+
+        # Create a new sheet and store the resulting ID
+        body: Final[dict] = {"properties": {"title": f"Oh, the Futures You'll Shape in {target_state}"}}
+        sheet_id = (
+            sheets_service.spreadsheets()
+            .create(body=body, fields="spreadsheetId")
+            .execute()
+            .get("spreadsheetId", None)
+        )
+
+        # Parse the return data into topics
+        data_topics: Final[list[str]] = return_data.keys()
+
+        # Iterate through each topic
+        for data in data_topics:
+            # Living costs get special treatment
+            if data == "living_costs":
+                # Skip over for now
+                continue
+
+            # Retrieve the target state and current state entries
+            state_topics: Final[list[str]] = return_data[data].keys()
+
+            # Iterate through each state topic
+            for state in state_topics:
+                # Retrieve the data sources
+                sources_topics: Final[list[str]] = return_data[data][state].keys()
+
+                # Iterate through each data source
+                for source in sources_topics:
+
+                    async def _generate_row_data() -> list[dict]:
+                        # Return data
+                        request_data: list[dict] = []
+
+                        # Check if this row has any applicable data
+                        if len(return_data[data][state][source]) == 0:
+                            # Exit
+                            return request_data
+
+                        # Create a page id
+                        page_id: Final[int] = randint(0, 9999)
+
+                        # Create a new sheet
+                        request_data.append(
+                            {
+                                "addSheet": {
+                                    "properties": {
+                                        "title": f"{data.replace("_", " ").title()} - {state.replace("_", " ").title()} - {source.replace("_", " ").title()}",
+                                        "sheetId": page_id,
+                                    },
+                                },
+                            }
+                        )
+
+                        # Modify the sheet dimensions
+                        request_data.append(
+                            {
+                                "appendDimension": {
+                                    "sheetId": page_id,
+                                    "dimension": "COLUMNS",
+                                    "length": 20,
+                                },
+                            }
+                        )
+                        request_data.append(
+                            {
+                                "appendDimension": {
+                                    "sheetId": page_id,
+                                    "dimension": "ROWS",
+                                    "length": 120,
+                                },
+                            }
+                        )
+
+                        # Declare the column index
+                        column_index: int = 0
+
+                        # Iterate through each key
+                        for key in return_data[data][state][source][0].keys():
+                            # Declare the row index
+                            row_index: int = 1
+
+                            # Create a new request
+                            request_data.append(
+                                {
+                                    "updateCells": {
+                                        "start": {
+                                            "sheetId": page_id,
+                                            "rowIndex": 0,
+                                            "columnIndex": column_index,
+                                        },
+                                        "rows": [
+                                            {
+                                                "values": [
+                                                    {
+                                                        "userEnteredValue": {
+                                                            "stringValue": key.replace("_", " ").title()
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        ],
+                                        "fields": "userEnteredValue",
+                                    }
+                                }
+                            )
+
+                            # Collect the available entries
+                            entries: Final[list[dict]] = return_data[data][state][source]
+
+                            # Iterate
+                            for entry in entries:
+                                # Create a new request
+                                request_data.append(
+                                    {
+                                        "updateCells": {
+                                            "start": {
+                                                "sheetId": page_id,
+                                                "rowIndex": row_index,
+                                                "columnIndex": column_index,
+                                            },
+                                            "rows": [
+                                                {
+                                                    "values": [
+                                                        {
+                                                            "userEnteredValue": {
+                                                                "stringValue": entry[key]
+                                                            }
+                                                        }
+                                                    ]
+                                                }
+                                            ],
+                                            "fields": "userEnteredValue",
+                                        }
+                                    }
+                                )
+
+                                # Increment the column index
+                                row_index += 1
+
+                            # Increment the row index
+                            column_index += 1
+
+                        # Return the generated body
+                        return request_data
+
+                # Generate the body
+                body: Final[list[dict]] = await _generate_row_data()
+
+                # Skip empty requests
+                if len(body) == 0:
+                    # Next row
+                    continue
+
+                # Submit a request
+                sheets_service.spreadsheets().batchUpdate(body={"requests": body}, spreadsheetId=sheet_id).execute()
+
     async def _handle_route_home(self) -> str:
         # Populate the current session
         if "state" not in quart.session or "credentials" not in quart.session:
@@ -198,8 +363,41 @@ class Server:
                             continue
 
                         case "search":
-                            # Next iteration
-                            continue
+                            # Check if the current user is signed in
+                            if quart.session.get("credentials", None) == None:
+                                # User is not logged in
+                                await send_as_json(
+                                    response_type=request_type,
+                                    response_data=request_data,
+                                    response_args={"response": "INVALID_SESSION"},
+                                    transport_client_id=transport_client_id,
+                                )
+
+                                # Next iteration
+                                continue
+
+                            # Extract the individual SearchQuery parameters
+                            target_state: Final[str] = request_args.get("target_state", None)
+                            current_state: Final[str] = request_args.get("current_state", None)
+                            majoring_target: Final[str] = request_args.get("majoring_target", None)
+                            use_queer_scoring: Final[str] = request_args.get("use_queer_scoring", None)
+
+                            # Send a search request
+                            response: Final[dict] = await search(
+                                SearchQuery(
+                                    target_state=target_state,
+                                    current_state=current_state,
+                                    majoring_target=majoring_target,
+                                    use_queer_scoring=use_queer_scoring,
+                                )
+                            )
+
+                            # Write the data into a Google Sheet
+                            await self._util_write_to_sheet(
+                                return_data=response,
+                                target_state=target_state,
+                                current_state=current_state,
+                            )
 
                         case "autocomplete":
                             # Check if an empty string was sent
