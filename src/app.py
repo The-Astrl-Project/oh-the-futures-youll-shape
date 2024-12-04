@@ -35,12 +35,13 @@ from googleapiclient.discovery import build
 
 # Class Definitions
 class Server:
+    """A minimal and asynchronous webserver."""
     # Enums
 
     # Interfaces
 
     # Constants
-    __version__: Final[str] = "0.3.0-DEV"
+    __version__: Final[str] = "0.4.0-DEV"
 
     # Public Variables
 
@@ -63,7 +64,7 @@ class Server:
         self._app.asgi_app = StatisticsMiddleware(self._app.asgi_app)
 
         # Configure the server routes
-        self._app.route("/", methods=["GET"])(self._handle_route_home)
+        self._app.route("/my-future", methods=["GET"])(self._handle_route_home)
         self._app.route("/callback", methods=["GET"])(self._handle_route_callback)
         self._app.websocket("/transport")(self._handle_route_websocket)
 
@@ -76,6 +77,10 @@ class Server:
 
         # Start the web server
         self._app.run(host="0.0.0.0", port="5000", debug=True, use_reloader=False)
+
+    def return_app_instance(self) -> quart.Quart:
+        # Return the quart instance
+        return self._app
 
     # Private Static Methods
 
@@ -447,7 +452,7 @@ class Server:
                             )
 
                             # Configure the redirect uri
-                            oauth_control_flow.redirect_uri = "http://127.0.0.1:5000/callback"
+                            oauth_control_flow.redirect_uri = "https://astrl.dev/callback"
 
                             # Generate the OAuth url and Oauth state
                             oauth_control_flow_url, oauth_control_flow_state = (
