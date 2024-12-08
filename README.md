@@ -1,3 +1,6 @@
+<!-- CI Badge -->
+[![Build Docker Image](https://github.com/The-Astrl-Project/oh-the-futures-youll-shape/actions/workflows/ci.yml/badge.svg?branch=main&event=push)](https://github.com/The-Astrl-Project/oh-the-futures-youll-shape/actions/workflows/ci.yml)
+
 <!-- Development Status Note -->
 > [!NOTE]
 > The development branch usually contains partially working code. Please refer to the staging or main(production) branches if you intend on using this project.
