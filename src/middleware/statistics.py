@@ -12,7 +12,6 @@
 # Import Statements
 # ----------------------------------------------------------------
 import json
-from os import mkdir
 from typing import Final
 # ---
 
@@ -54,9 +53,6 @@ class StatisticsMiddleware:
 
         # Try to create the logging directory and file
         try:
-            # Create the logging directory
-            mkdir("./logs")
-
             # Create the logging file
             with open("./logs/web_stats.json", "a") as log_file:
                 # To avoid parsing errors
