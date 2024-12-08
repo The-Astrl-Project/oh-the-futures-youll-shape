@@ -16,7 +16,7 @@ FROM python:3.12.8-alpine3.20 as build
 COPY ./src/ /app
 
 # Setup the Python environment
-RUN pip3 install --upgrade -r /app/requirements.txt
+RUN pip3 install --upgrade -r /app/requirements.txt && pyppeteer-install
 
 # Expose volumes
 VOLUME [ "/app/keys" ]

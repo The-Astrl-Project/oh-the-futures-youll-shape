@@ -39,12 +39,13 @@ from hypercorn.asyncio import serve
 def main() -> None:
     # Create a new config object
     config = Config()
-    config.bind = ["[::]:443"]
+    config.bind = ["0.0.0.0:443"]
     config.keyfile = "./certs/astrl.dev.key"
     config.ca_certs = "./certs/astrl.dev.pem"
+    config.certfile = "./certs/astrl.dev.pem"
 
     # Run the app
-    asyncio.run(serve(Server({"SECRET_KEY": f"{environ["SECRET_KEY"]}", "IS_PROD": True}).return_app_instance(), config))
+    asyncio.run(serve(Server({"SECRET_KEY": f"{environ['SECRET_KEY']}", "IS_PROD": True}).return_app_instance(), config))
 
 # Public Methods
 
