@@ -576,3 +576,6 @@ class Server:
 if __name__ == "__main__":
     # Run in debug mode
     Server({"SECRET_KEY": "ASTRL-DEV", "IS_PROD": False}).run_app_as_debug()
+
+# Production ready app instance
+prod: Final[quart.Quart] = Server({"SECRET_KEY": f"{environ['SECRET_KEY']}", "IS_PROD": True}).return_app_instance()
