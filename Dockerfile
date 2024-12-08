@@ -12,11 +12,14 @@
 # 3.12 || Alpine Linux
 FROM python:3.12.8-alpine3.20 as build
 
+# Set the working directory
+WORKDIR /app
+
 # Copy the source directory
-COPY ./src/ /app
+COPY ./src/ .
 
 # Setup the Python environment
-RUN pip3 install --upgrade -r /app/requirements.txt && pyppeteer-install
+RUN pip3 install --upgrade -r ./requirements.txt
 
 # Expose volumes
 VOLUME [ "/app/keys" ]
@@ -33,4 +36,4 @@ ENV SECRET_KEY="SECRET_KEY"
 HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 CMD [ "curl -f https://astrl.dev/healthcheck || exit 1" ]
 
 # Execute
-CMD [ "python3", "/app/prod.py" ]
+CMD [ "python3", "prod.py" ]
