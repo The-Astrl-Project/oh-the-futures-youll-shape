@@ -383,8 +383,11 @@ async def _headless_fetch(url: str) -> any:
         return html_dom["dom"].strip()
 
     except Exception as _:
-        # This looks painful
-        return await _headless_fetch(url=url)
+        # This line has caused me SO MANY PROBLEMS
+        # return await _headless_fetch(url=url)
+
+        # Just return nothing
+        return None
 
 async def _search_for_scholarships(target_state: str, current_state: str) -> dict:
     async def _extract(web_response: any, web_source: str) -> list[dict]:

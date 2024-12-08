@@ -12,6 +12,7 @@
 # Import Statements
 # ----------------------------------------------------------------
 import json
+from os.path import exists
 from typing import Final
 # ---
 
@@ -51,27 +52,26 @@ class StatisticsMiddleware:
         self._quart_app = quart_app
         self._log_file_name = log_file_name
 
-        # Try to create the logging directory and file
-        try:
-            # Create the logging file
-            with open("./logs/web_stats.json", "a") as log_file:
+        # Check if a log file exists
+        if exists(self._log_file_name) == True:
+            # Load the previous log file
+            with open(self._log_file_name, "r") as log_file:
+                # Load the JSON file
+                self._stats_data_dict = json.load(log_file)
+
+                # Close the file
+                log_file.close()
+        else:
+            # Create a new log file
+            with open(self._log_file_name, "x") as log_file:
                 # To avoid parsing errors
                 log_file.write('{"routes": {}, "addresses": {}, "args": {}}')
 
+                # Set the default state
+                self._stats_data_dict = {"routes": {}, "addresses": {}, "args": {}}
+
                 # Close the log file
                 log_file.close()
-        except:
-            # Already created so just skip ahead
-            pass
-
-        # Load the previous log file
-        with open(self._log_file_name, "r") as log_file:
-
-            # Load the data
-            self._stats_data_dict = json.load(log_file)
-
-            # Close the file
-            log_file.close()
 
     async def __call__(self, scope, receive, send) -> None:
         # Collect the IP address
