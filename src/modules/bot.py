@@ -38,7 +38,7 @@ __region_data_file_path__: Final[str] = "./data/region_data.csv"
 __available_web__indexers__: Final[dict] = {
     "universities": {
         "usnews": "https://www.usnews.com/best-colleges/{mixed_state_abrv}?_sort=rank&_sortDirection=asc",
-        "collegeboard": "https://bigfuture.collegeboard.org/college-search/filters?s={mixed_state_abrv}&txa={majoring_target}",
+        "collegeboard": "https://bigfuture.collegeboard.org/college-search/filters?s={mixed_state_abrv}&txm={majoring_target}",
     },
     "scholarships": {
         "careeronestop": "https://www.careeronestop.org/toolkit/training/find-scholarships.aspx?curPage={page_number}&pagesize=500&studyLevelfilter=High%20School&georestrictionfilter={mixed_state}",
