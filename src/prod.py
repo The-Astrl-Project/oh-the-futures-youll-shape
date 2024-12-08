@@ -11,7 +11,7 @@
 
 # Import Statements
 # ----------------------------------------------------------------
-from os import environ, execlp
+from os import environ
 # ---
 from app import Server
 # ---
@@ -37,11 +37,6 @@ from hypercorn.asyncio import serve
 
 # main
 def main() -> None:
-    # Setup pyppeteer
-    print("[LOG] Running pyppeteer-install...")
-    execlp("pyppeteer-install", "pyppeteer-install")
-    print("[LOG] Done!")
-
     # Create a new config object
     config = Config()
     config.bind = ["0.0.0.0:443"]
