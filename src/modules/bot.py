@@ -27,14 +27,13 @@ from bs4 import BeautifulSoup
 # --------------------------------
 # Oh, the Futures You'll Shape || modules/bot.py
 #
-# Responsible for scraping the internet for relevant data. Also handles
-# the caching of frequently requested data.
+# Responsible for scraping the internet for relevant data.
 #
 # @author @MaxineToTheStars <https://github.com/MaxineToTheStars>
 # ----------------------------------------------------------------
 
 # Constants
-__version__: Final[str] = "0.3.1-DEV"
+__version__: Final[str] = "0.4.0-DEV"
 __region_data_file_path__: Final[str] = "./data/region_data.csv"
 __available_web__indexers__: Final[dict] = {
     "universities": {
@@ -131,7 +130,7 @@ class SearchUtils:
         """
 
         # Return
-        return query.strip().lower().replace(" ", "-")
+        return query.strip().lower().replace(" ", "-") or None
 
     # Public Inherited Methods
 
@@ -345,7 +344,7 @@ async def _standard_fetch(url: str) -> any:
     await session.close()
 
     # Return the HTML response
-    return html_response
+    return html_response or None
 
 async def _headless_fetch(url: str) -> any:
     """
@@ -383,10 +382,7 @@ async def _headless_fetch(url: str) -> any:
         return html_dom["dom"].strip()
 
     except Exception as _:
-        # This line has caused me SO MANY PROBLEMS
-        # return await _headless_fetch(url=url)
-
-        # Just return nothing
+        # Return None
         return None
 
 async def _search_for_scholarships(target_state: str, current_state: str) -> dict:
@@ -459,6 +455,8 @@ async def _search_for_scholarships(target_state: str, current_state: str) -> dic
                         .findChild("div", recursive=False)
                         .get_text()
                         .strip()
+                        .replace(" ", "", 1)
+                        .replace(" ", " / ")
                         .replace("\n", " ")
                         .replace("\xa0", " ")
                     )
@@ -468,7 +466,8 @@ async def _search_for_scholarships(target_state: str, current_state: str) -> dic
                         scholarship_entry.find("div", attrs={"class": "notranslate table-Numeric"})
                         .get_text()
                         .strip()
-                        .replace(" ", "-")
+                        .replace(" ", "", 1)
+                        .replace(" ", " - ")
                         .replace("\n", " ")
                         .replace("\xa0", " ")
                     )
@@ -480,7 +479,7 @@ async def _search_for_scholarships(target_state: str, current_state: str) -> dic
                         .strip()
                         .replace("\n", " ")
                         .replace("\xa0", " ")
-                    )
+                    ) or "Unknown"
 
                     # Clean up the JSON and append it to the return object
                     return_data.append(
@@ -645,16 +644,24 @@ async def _search_for_scholarships(target_state: str, current_state: str) -> dic
 
                     # Check if a valid response was returned
                     if response is None:
-                        # Reached the end of available scholarships || Exit the loop
-                        break
+                        # Check if this is the first iteration or Nth iteration
+                        if page_number == 0:
+                            return_data["target_state"]["scholarshipamerica"] = None
+                        else:
+                            # Reached the end of available scholarships || Exit the loop
+                            break
 
                     # Parse the data
                     parsed_data: Final[list[dict]] = await _extract(web_response=response, web_source="scholarshipamerica")
 
                     # Check if the parsed data contains any scholarships
                     if len(parsed_data) == 0:
-                        # Website is dry of scholarships || Exit the loop
-                        break
+                        # Check if this is the first iteration or Nth iteration
+                        if page_number == 0:
+                            return_data["target_state"]["scholarshipamerica"] = None
+                        else:
+                            # Reached the end of available scholarships || Exit the loop
+                            break
 
                     # Store the results
                     return_data["target_state"]["scholarshipamerica"] = parsed_data
@@ -676,16 +683,24 @@ async def _search_for_scholarships(target_state: str, current_state: str) -> dic
 
                     # Check if a valid response was returned
                     if response is None:
-                        # Reached the end of available scholarships || Exit the loop
-                        break
+                        # Check if this is the first iteration or Nth iteration
+                        if page_number == 0:
+                            return_data["current_state"]["scholarshipamerica"] = None
+                        else:
+                            # Reached the end of available scholarships || Exit the loop
+                            break
 
                     # Parse the data
                     parsed_data: Final[list[dict]] = await _extract(web_response=response, web_source="scholarshipamerica")
 
                     # Check if the parsed data contains any scholarships
                     if len(parsed_data) == 0:
-                        # Website is dry of scholarships || Exit the loop
-                        break
+                        # Check if this is the first iteration or Nth iteration
+                        if page_number == 0:
+                            return_data["current_state"]["scholarshipamerica"] = None
+                        else:
+                            # Reached the end of available scholarships || Exit the loop
+                            break
 
                     # Store the results
                     return_data["current_state"]["scholarshipamerica"] = parsed_data
@@ -869,13 +884,13 @@ async def _search_for_universities(target_state_abrv: str, current_state_abrv: s
                         await _clean_and_verify_json(
                             json_string=json.dumps(
                                 {
-                                    "university_entry_url": university_entry_url,
-                                    "university_entry_name": university_entry_name,
-                                    "university_entry_location": university_entry_location,
-                                    "university_entry_overview": university_entry_overview,
-                                    "university_entry_graduation_rate": university_entry_graduation_rate,
-                                    "university_entry_average_tuition": university_entry_average_tuition,
-                                    "university_entry_sat_range": university_entry_sat_range,
+                                    "university_url": university_entry_url,
+                                    "university_name": university_entry_name,
+                                    "university_location": university_entry_location,
+                                    "university_overview": university_entry_overview,
+                                    "university_graduation_rate": university_entry_graduation_rate,
+                                    "university_average_tuition": university_entry_average_tuition,
+                                    "university_sat_range": university_entry_sat_range,
                                 }
                             )
                         )
@@ -974,7 +989,9 @@ async def _search_for_universities(target_state_abrv: str, current_state_abrv: s
     }
 
     # Execute
-    await _search(return_data=return_data)
+    await asyncio.gather(
+        _search(return_data=return_data),
+    )
 
     # Return
     return return_data
@@ -1068,10 +1085,10 @@ async def _search_for_living_costs(target_city: str, target_state_abrv: str, cur
                             await _clean_and_verify_json(
                                 json_string=json.dumps(
                                     {
-                                        "cost_entry_name": cost_entry_name,
-                                        "cost_entry_current_state_cost": cost_entry_current_state_cost,
-                                        "cost_entry_target_state_cost": cost_entry_target_state_cost,
-                                        "cost_entry_cost_difference": cost_entry_cost_difference,
+                                        "item": cost_entry_name,
+                                        "current_state_cost": cost_entry_current_state_cost,
+                                        "target_state_cost": cost_entry_target_state_cost,
+                                        "cost_difference": cost_entry_cost_difference,
                                     }
                                 )
                             )
@@ -1114,18 +1131,22 @@ async def _search_for_living_costs(target_city: str, target_state_abrv: str, cur
             # Check if a valid response was returned
             if response is None:
                 # No data found set as None
-                return_data["numbeo"] = None
+                return_data["sources"]["numbeo"] = None
             else:
                 # Parse the data and store the results
-                return_data["numbeo"] = await _extract(web_response=response, web_source="numbeo")
+                return_data["sources"]["numbeo"] = await _extract(web_response=response, web_source="numbeo")
 
     # Declare the return dictionary
     return_data: dict = {
-        "numbeo": [],
+        "sources": {
+            "numbeo": [],
+        }
     }
 
     # Execute
-    await _search(return_data=return_data)
+    await asyncio.gather(
+        _search(return_data=return_data),
+    )
 
     # Return
     return return_data
@@ -1285,7 +1306,9 @@ async def _search_for_queer_scoring(target_state_abrv: str, current_state_abrv: 
 
     # Execute
     if use_queer_scoring == True:
-        await _search(return_data=return_data)
+        await asyncio.gather(
+            _search(return_data=return_data)
+        )
 
     # Return
     return return_data

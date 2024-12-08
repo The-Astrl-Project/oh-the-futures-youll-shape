@@ -62,6 +62,7 @@ function _hydrate_webpage() {
   // Make text boxes interactive
   text_inputs.target_state.addEventListener("change", (_) => _on_change_event_handler("target-state"));
   text_inputs.current_state.addEventListener("change", (_) => _on_change_event_handler("current-state"));
+  text_inputs.majoring_target.addEventListener("change", (_) => _on_change_event_handler("majoring-target"));
 
   // Request the current user's profile image
   send_as_json("data", "user-profile-image");
@@ -140,6 +141,13 @@ function _on_change_event_handler(from_component) {
 
       // Exit
       break;
+
+    case "majoring-target":
+      // Send autocomplete request
+      send_as_json("data", "autocomplete", { input: text_inputs.majoring_target.value, target: "majoring-target" });
+
+      // Exit
+      break;
   }
 }
 
@@ -188,6 +196,13 @@ window.addEventListener("transport_server_message", (args) => {
             case "current-state":
               // Update text
               text_inputs.current_state.value = text;
+
+              // Break
+              break;
+
+            case "majoring-target":
+              // Update text
+              text_inputs.majoring_target.value = text;
 
               // Break
               break;

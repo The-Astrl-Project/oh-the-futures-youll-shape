@@ -15,6 +15,7 @@ from os import environ
 # ---
 from app import Server
 # ---
+import uvloop
 import asyncio
 from hypercorn.config import Config
 from hypercorn.asyncio import serve
@@ -39,13 +40,24 @@ from hypercorn.asyncio import serve
 def main() -> None:
     # Create a new config object
     config = Config()
+
+    # Bind on the IPv4 to port 443
     config.bind = ["0.0.0.0:443"]
+
+    # Cloudflare Origin CA
     config.keyfile = "./certs/astrl.dev.key"
     config.ca_certs = "./certs/astrl.dev.pem"
     config.certfile = "./certs/astrl.dev.pem"
 
+    # Configure number of available workers
+    config.workers = 16
+    config.worker_class = "uvloop"
+
+    # Install uvloop
+    uvloop.install()
+
     # Run the app
-    asyncio.run(serve(Server({"SECRET_KEY": f"{environ['SECRET_KEY']}", "IS_PROD": True}).return_app_instance(), config))
+    asyncio.run(serve(Server({"SECRET_KEY": f"{environ['SECRET_KEY']}", "IS_PROD": True}).return_app_instance(), config, mode="asgi"))
 
 # Public Methods
 
