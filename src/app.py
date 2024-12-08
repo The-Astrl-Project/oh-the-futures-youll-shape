@@ -144,6 +144,11 @@ class Server:
                     # Iterate through each data source
                     for source in return_data[data].keys():
 
+                        # Check for invalid data
+                        if return_data[data][source] is None:
+                            # Continue to the next row
+                            continue
+
                         # Check if this row has any applicable data
                         if len(return_data[data][source]) == 0:
                             # Continue to the next row
@@ -293,6 +298,11 @@ class Server:
 
                     # Iterate through each data source
                     for source in return_data[data][state].keys():
+
+                        # Check for invalid data
+                        if return_data[data][state][source] is None:
+                            # Continue to the next row
+                            continue
 
                         # Check if this row has any applicable data
                         if len(return_data[data][state][source]) == 0:
