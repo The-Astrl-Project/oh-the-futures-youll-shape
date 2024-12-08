@@ -362,7 +362,7 @@ async def _headless_fetch(url: str) -> any:
     # Recursively try to fetch the URL
     try:
         # Create a new browser session
-        browser = await pyppeteer.launch({"headless": True, "defaultViewport": None})
+        browser = await pyppeteer.launch({"headless": True, "defaultViewport": None, "executablePath": "/usr/bin/google-chrome"})
 
         # Open a new page
         web_page = await browser.newPage()

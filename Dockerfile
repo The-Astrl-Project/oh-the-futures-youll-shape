@@ -9,8 +9,8 @@
 # except according to the terms contained in the LICENSE file.
 #
 
-# 3.12 || Alpine Linux
-FROM python:3.12.8-alpine3.20 as build
+# 3.12 || Debian Bookworm Slim
+FROM python:3.12.8-slim-bookworm
 
 # Set the working directory
 WORKDIR /app
@@ -20,6 +20,14 @@ COPY ./src/ .
 
 # Setup the Python environment
 RUN pip3 install --upgrade -r ./requirements.txt
+
+# Install Google Chrome Stable
+RUN apt-get update && apt-get install gnupg wget -y && \
+    wget --quiet --output-document=- https://dl-ssl.google.com/linux/linux_signing_key.pub | gpg --dearmor > /etc/apt/trusted.gpg.d/google-archive.gpg && \
+    sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list' && \
+    apt-get update && \
+    apt-get install google-chrome-stable -y --no-install-recommends && \
+    rm -rf /var/lib/apt/lists/*
 
 # Expose volumes
 VOLUME [ "/app/keys" ]
