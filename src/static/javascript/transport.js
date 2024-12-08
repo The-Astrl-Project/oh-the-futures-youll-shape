@@ -24,8 +24,8 @@
 // Interfaces
 
 // Constants
-const _transport_client_id = crypto.randomUUID().toString();
-const _transport_client_socket = new WebSocket(`ws://${location.host}/transport`);
+const _transport_client_id = location.protocol.endsWith("s") == true ? crypto.randomUUID().toString() : "LOCAL_HOST";
+const _transport_client_socket = location.protocol.endsWith("s") == true ? new WebSocket(`wss://${location.host}/transport`) : new WebSocket(`ws://${location.host}/transport`);
 
 // Public Variables
 
