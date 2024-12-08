@@ -24,7 +24,6 @@
 // Interfaces
 
 // Constants
-// NOTE: This should not be shipped to PROD like this
 const _transport_client_id = crypto.randomUUID().toString();
 const _transport_client_socket = new WebSocket(`ws://${location.host}/transport`);
 

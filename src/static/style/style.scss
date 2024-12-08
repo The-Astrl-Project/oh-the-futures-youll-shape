@@ -13,6 +13,7 @@
 $color-primary: rgba(255, 107, 181, 1);
 $color-secondary: rgba(0, 123, 255, 1);
 $color-tertiary: rgba(255, 255, 255, 1);
+$color-gradient-average: rgba(127, 115, 218, 1);
 $color-background-text: rgba(255, 255, 255, 0.1);
 $color-background-solid: rgba(0, 0, 0, 0.8);
 
@@ -20,11 +21,18 @@ $color-background-solid: rgba(0, 0, 0, 0.8);
 body {
   align-items: center;
   background: linear-gradient(45deg, $color-secondary, $color-primary);
+  background-color: $color-gradient-average;
   display: flex;
   font-family: Arial, sans-serif;
   height: 100vh;
   justify-content: center;
   margin: 0;
+}
+
+body.loading {
+  background-color: rgba(0, 0, 0, 1);
+  background-image: none;
+  transition: background-color 1s ease-in-out;
 }
 
 input[type="checkbox"] {
@@ -38,7 +46,7 @@ input[type="checkbox"] {
   width: 30px;
 
   &:checked {
-    background-color: rgba(145, 114, 213, 1);
+    background-color: $color-gradient-average;
     border-color: $color-tertiary;
   }
 }
@@ -143,6 +151,27 @@ label {
 .container-settings.active {
   opacity: 1;
   transform: translate(-50%, 0px);
+}
+
+.loading-message {
+  animation: scroll-left 5s linear infinite;
+  color: white;
+  font-size: 24px;
+  font-weight: bold;
+  left: 0%;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  white-space: nowrap;
+
+  @keyframes scroll-left {
+    0% {
+      left: 100%;
+    }
+    100% {
+      left: -100%;
+    }
+  }
 }
 
 .primary-action-button {

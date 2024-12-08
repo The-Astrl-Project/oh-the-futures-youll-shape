@@ -34,7 +34,7 @@ from bs4 import BeautifulSoup
 # ----------------------------------------------------------------
 
 # Constants
-__version__: Final[str] = "0.3.0-DEV"
+__version__: Final[str] = "0.3.1-DEV"
 __region_data_file_path__: Final[str] = "./data/region_data.csv"
 __available_web__indexers__: Final[dict] = {
     "universities": {
@@ -110,7 +110,7 @@ class SearchUtils:
                 city_name: Final[str] = region_row[4].strip().lower()
 
                 # Attempt to match the query
-                if (state_name.startswith(query) or city_name.startswith(query) or state_name.find(query) != -1 or city_name.find(query) != -1):
+                if state_name.startswith(query) or city_name.startswith(query) or state_name.find(query) != -1 or city_name.find(query) != -1:
                     # Return the region row as a converted list
                     return list(region_row)
 
@@ -784,7 +784,7 @@ async def _search_for_universities(target_state_abrv: str, current_state_abrv: s
 
                     # Retrieve the university URL
                     university_entry_url: Final[str] = (
-                        university_entry.find("a", attrs={"target": "_blank"})["href"]
+                        university_entry.find("a", attrs={"rel": "noreferrer"})["href"]
                         .strip()
                         .replace(" ", "%20")
                     )
@@ -1292,9 +1292,9 @@ if __name__ == "__main__":
     asyncio.run(
         search(
             SearchQuery(
-                target_state="New York",
+                target_state="CA",
                 current_state="Florida",
-                majoring_target="Computer Science",
+                majoring_target="",
                 use_queer_scoring=True,
             )
         )

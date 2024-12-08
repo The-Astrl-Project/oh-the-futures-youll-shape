@@ -47,7 +47,7 @@ class StatisticsMiddleware:
     _is_running: bool = False
 
     # Constructor
-    def __init__(self, quart_app: quart.Quart, log_file_name: str = "./logs/stats.json") -> None:
+    def __init__(self, quart_app: quart.Quart, log_file_name: str = "./logs/web_stats.json") -> None:
         # Store middleware configuration
         self._quart_app = quart_app
         self._log_file_name = log_file_name
@@ -58,7 +58,7 @@ class StatisticsMiddleware:
             mkdir("./logs")
 
             # Create the logging file
-            with open("./logs/stats.json", "a") as log_file:
+            with open("./logs/web_stats.json", "a") as log_file:
                 # To avoid parsing errors
                 log_file.write('{"routes": {}, "addresses": {}, "args": {}}')
 

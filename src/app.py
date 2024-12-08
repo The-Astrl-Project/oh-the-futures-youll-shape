@@ -36,12 +36,13 @@ from googleapiclient.discovery import build
 # Class Definitions
 class Server:
     """A minimal and asynchronous webserver."""
+
     # Enums
 
     # Interfaces
 
     # Constants
-    __version__: Final[str] = "0.4.0-DEV"
+    __version__: Final[str] = "0.5.0-DEV"
 
     # Public Variables
 
@@ -64,6 +65,8 @@ class Server:
         self._app.asgi_app = StatisticsMiddleware(self._app.asgi_app)
 
         # Configure the server routes
+        self._app.errorhandler(404)(self._handle_client_error)
+        self._app.before_request((self._handle_before_request))
         self._app.route("/my-future", methods=["GET"])(self._handle_route_home)
         self._app.route("/callback", methods=["GET"])(self._handle_route_callback)
         self._app.websocket("/transport")(self._handle_route_websocket)
@@ -72,6 +75,8 @@ class Server:
 
     # Public Inherited Methods
     def run_app_as_debug(self) -> None:
+        """Launches the Quart app with debugging enabled."""
+
         # Configure the environment
         environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
 
@@ -79,13 +84,31 @@ class Server:
         self._app.run(host="0.0.0.0", port="5000", debug=True, use_reloader=False)
 
     def return_app_instance(self) -> quart.Quart:
+        """Returns the Quart app instance."""
+
         # Return the quart instance
         return self._app
 
     # Private Static Methods
 
     # Private Inherited Methods
-    async def _util_write_to_sheet(self, return_data: dict, target_state: str, current_state: str) -> None:
+    async def _util_write_to_sheet(self, return_data: dict, target_state: str, current_state: str) -> str:
+        """
+        Writes the scrapped data into a Google Sheet for user consumption. Returns
+        the Google Sheet URL
+
+        Parameters
+        ----------
+        return_data : dict
+            The scrapped web data
+
+        target_state : str
+            The target state
+
+        current_state : str
+            The current state
+        """
+
         # Retrieve stored credentials
         credentials: Final[Credentials] = Credentials(**quart.session.get("credentials", None))
 
@@ -108,7 +131,149 @@ class Server:
         for data in data_topics:
             # Living costs get special treatment
             if data == "living_costs":
-                # Skip over for now
+                # Local generate function declaration
+                async def _generate() -> list[dict]:
+                    """
+                    Generates a Google Sheet Page for every data source.
+                    Each page generated is one atomic request
+                    """
+
+                    # Declare return data
+                    request_data: list[dict] = []
+
+                    # Iterate through each data source
+                    for source in return_data[data].keys():
+
+                        # Check if this row has any applicable data
+                        if len(return_data[data][source]) == 0:
+                            # Continue to the next row
+                            continue
+
+                        # Create a page id
+                        page_id: Final[int] = randint(0, 9999)
+
+                        # Format data sources
+                        formatted_data_title: Final[str] = data.replace("_", " ").title()
+                        formatted_source_title: Final[str] = source.replace("_", " ").title()
+
+                        # Create a new sheet
+                        request_data.append(
+                            {
+                                "addSheet": {
+                                    "properties": {
+                                        "title": f"{formatted_data_title} - {formatted_source_title}",
+                                        "sheetId": page_id,
+                                    },
+                                },
+                            }
+                        )
+
+                        # Modify the sheet dimensions
+                        request_data.append(
+                            {
+                                "appendDimension": {
+                                    "sheetId": page_id,
+                                    "dimension": "COLUMNS",
+                                    "length": 20,
+                                },
+                            }
+                        )
+                        request_data.append(
+                            {
+                                "appendDimension": {
+                                    "sheetId": page_id,
+                                    "dimension": "ROWS",
+                                    "length": 120,
+                                },
+                            }
+                        )
+
+                        # Declare the column index
+                        column_index: int = 0
+
+                        # Iterate through each key
+                        for key in return_data[data][source][0].keys():
+                            # Declare the row index
+                            row_index: int = 1
+
+                            # Create a new request
+                            request_data.append(
+                                {
+                                    "updateCells": {
+                                        "start": {
+                                            "sheetId": page_id,
+                                            "rowIndex": 0,
+                                            "columnIndex": column_index,
+                                        },
+                                        "rows": [
+                                            {
+                                                "values": [
+                                                    {
+                                                        "userEnteredValue": {
+                                                            "stringValue": key.replace("_", " ").title()
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        ],
+                                        "fields": "userEnteredValue",
+                                    }
+                                }
+                            )
+
+                            # Collect the available entries
+                            entries: Final[list[dict]] = return_data[data][source]
+
+                            # Iterate
+                            for entry in entries:
+                                # Create a new request
+                                request_data.append(
+                                    {
+                                        "updateCells": {
+                                            "start": {
+                                                "sheetId": page_id,
+                                                "rowIndex": row_index,
+                                                "columnIndex": column_index,
+                                            },
+                                            "rows": [
+                                                {
+                                                    "values": [
+                                                        {
+                                                            "userEnteredValue": {
+                                                                "stringValue": entry[
+                                                                    key
+                                                                ]
+                                                            }
+                                                        }
+                                                    ]
+                                                }
+                                            ],
+                                            "fields": "userEnteredValue",
+                                        }
+                                    }
+                                )
+
+                                # Increment the column index
+                                row_index += 1
+
+                            # Increment the row index
+                            column_index += 1
+
+                    # Return the generated body
+                    return request_data
+
+                # Generate the body
+                body: Final[list[dict]] = await _generate()
+
+                # Skip empty requests
+                if len(body) == 0:
+                    # Next row
+                    continue
+
+                # Submit a request
+                sheets_service.spreadsheets().batchUpdate(body={"requests": body}, spreadsheetId=sheet_id).execute()
+
+                # Next entry
                 continue
 
             # Retrieve the target state and current state entries
@@ -116,30 +281,42 @@ class Server:
 
             # Iterate through each state topic
             for state in state_topics:
-                # Retrieve the data sources
-                sources_topics: Final[list[str]] = return_data[data][state].keys()
+                # Local generate function declaration
+                async def _generate() -> list[dict]:
+                    """
+                    Generates a Google Sheet Page for every data source.
+                    Each page generated is one atomic request
+                    """
 
-                # Iterate through each data source
-                for source in sources_topics:
+                    # Declare return data
+                    request_data: list[dict] = []
 
-                    async def _generate_row_data() -> list[dict]:
-                        # Return data
-                        request_data: list[dict] = []
+                    # Iterate through each data source
+                    for source in return_data[data][state].keys():
 
                         # Check if this row has any applicable data
                         if len(return_data[data][state][source]) == 0:
-                            # Exit
-                            return request_data
+                            # Continue to the next row
+                            continue
 
                         # Create a page id
                         page_id: Final[int] = randint(0, 9999)
+
+                        # Format data sources
+                        formatted_data_title: Final[str] = data.replace("_", " ").title()
+                        formatted_state_title: Final[str] = (
+                            target_state.replace("_", " ").title()
+                            if state == "target_state"
+                            else current_state.replace("_", " ").title()
+                        )
+                        formatted_source_title: Final[str] = source.replace("_", " ").title()
 
                         # Create a new sheet
                         request_data.append(
                             {
                                 "addSheet": {
                                     "properties": {
-                                        "title": f"{data.replace("_", " ").title()} - {state.replace("_", " ").title()} - {source.replace("_", " ").title()}",
+                                        "title": f"{formatted_data_title} - {formatted_state_title} - {formatted_source_title}",
                                         "sheetId": page_id,
                                     },
                                 },
@@ -188,7 +365,9 @@ class Server:
                                                 "values": [
                                                     {
                                                         "userEnteredValue": {
-                                                            "stringValue": key.replace("_", " ").title()
+                                                            "stringValue": key.replace(
+                                                                "_", " "
+                                                            ).title()
                                                         }
                                                     }
                                                 ]
@@ -218,7 +397,9 @@ class Server:
                                                     "values": [
                                                         {
                                                             "userEnteredValue": {
-                                                                "stringValue": entry[key]
+                                                                "stringValue": entry[
+                                                                    key
+                                                                ]
                                                             }
                                                         }
                                                     ]
@@ -235,11 +416,11 @@ class Server:
                             # Increment the row index
                             column_index += 1
 
-                        # Return the generated body
-                        return request_data
+                    # Return the generated body
+                    return request_data
 
                 # Generate the body
-                body: Final[list[dict]] = await _generate_row_data()
+                body: Final[list[dict]] = await _generate()
 
                 # Skip empty requests
                 if len(body) == 0:
@@ -248,6 +429,17 @@ class Server:
 
                 # Submit a request
                 sheets_service.spreadsheets().batchUpdate(body={"requests": body}, spreadsheetId=sheet_id).execute()
+
+        # Return the Google Sheet URL
+        return f"https://docs.google.com/spreadsheets/d/{sheet_id}/edit"
+
+    async def _handle_client_error(self, _) -> str:
+        # Redirect back to the home page
+        return quart.redirect(quart.url_for("_handle_route_home"))
+
+    async def _handle_before_request(self) -> None:
+        # Make sessions permanent
+        quart.session.permanent = True
 
     async def _handle_route_home(self) -> str:
         # Populate the current session
@@ -265,7 +457,7 @@ class Server:
 
         # Create a new OAuth control flow
         oauth_control_flow: Final[Flow] = Flow.from_client_secrets_file(
-            "keys.json",
+            "./keys/keys.json",
             state=oauth_state,
             scopes=[
                 "https://www.googleapis.com/auth/userinfo.profile",
@@ -381,6 +573,14 @@ class Server:
                                 # Next iteration
                                 continue
 
+                            # User is logged in
+                            await send_as_json(
+                                response_type=request_type,
+                                response_data=request_data,
+                                response_args={"response": "PROCESSING_REQUEST"},
+                                transport_client_id=transport_client_id,
+                            )
+
                             # Extract the individual SearchQuery parameters
                             target_state: Final[str] = request_args.get("target_state", None)
                             current_state: Final[str] = request_args.get("current_state", None)
@@ -398,10 +598,18 @@ class Server:
                             )
 
                             # Write the data into a Google Sheet
-                            await self._util_write_to_sheet(
+                            sheet_url: Final[str] = await self._util_write_to_sheet(
                                 return_data=response,
                                 target_state=target_state,
                                 current_state=current_state,
+                            )
+
+                            # Notify the user
+                            await send_as_json(
+                                response_type=request_type,
+                                response_data=request_data,
+                                response_args={"response": "PROCESSING_FINISHED", "url": sheet_url},
+                                transport_client_id=transport_client_id,
                             )
 
                         case "autocomplete":
@@ -411,7 +619,11 @@ class Server:
                                 continue
 
                             # Run an autocomplete request on the given query
-                            autocomplete_results: Final[list[str]] = SearchUtils.autocomplete_region_from_query(query=request_args.get("input", None))
+                            autocomplete_results: Final[list[str]] = (
+                                SearchUtils.autocomplete_region_from_query(
+                                    query=request_args.get("input", None)
+                                )
+                            )
 
                             # Check if a valid result was return
                             if autocomplete_results is None:
@@ -443,7 +655,7 @@ class Server:
                             # Generate an OAuth control flow
                             oauth_control_flow: Final[Flow] = (
                                 Flow.from_client_secrets_file(
-                                    "keys.json",
+                                    "./keys/keys.json",
                                     scopes=[
                                         "https://www.googleapis.com/auth/userinfo.profile",
                                         "https://www.googleapis.com/auth/spreadsheets",
@@ -451,8 +663,17 @@ class Server:
                                 )
                             )
 
-                            # Configure the redirect uri
-                            oauth_control_flow.redirect_uri = "https://astrl.dev/callback"
+
+                            # Grab the value of is_prod
+                            use_production_uri: Final[bool] = self._quart_configuration.get("IS_PROD")
+
+                            # Check if we're in production or development
+                            if use_production_uri == True:
+                                # Use the production redirect
+                                oauth_control_flow.redirect_uri = "https://astrl.dev/callback"
+                            else:
+                                # Use the development redirect
+                                oauth_control_flow.redirect_uri = "http://127.0.0.1:5000/callback"
 
                             # Generate the OAuth url and Oauth state
                             oauth_control_flow_url, oauth_control_flow_state = (
@@ -487,4 +708,4 @@ class Server:
 # Script Check
 if __name__ == "__main__":
     # Run in debug mode
-    Server({"SECRET_KEY": "ASTRL-DEV"}).run_app_as_debug()
+    Server({"SECRET_KEY": "ASTRL-DEV", "IS_PROD": False}).run_app_as_debug()

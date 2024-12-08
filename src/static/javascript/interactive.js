@@ -48,7 +48,6 @@ function _hydrate_webpage() {
   action_buttons.settings_button = document.getElementById("settings-button");
   action_buttons.user_profile_button = document.getElementById("user-profile-button");
   action_buttons.toggle_queer_scoring = document.getElementById("use-queer-scoring");
-  action_buttons.toggle_location_button = document.getElementById("toggle-location-button");
 
   // Aggregate all found text inputs
   text_inputs.target_state = document.getElementById("target-state");
@@ -59,7 +58,6 @@ function _hydrate_webpage() {
   action_buttons.submit_button.addEventListener("click", (_) => _on_click_event_handler("submit-button"));
   action_buttons.settings_button.addEventListener("click", (_) => _on_click_event_handler("settings-button"));
   action_buttons.user_profile_button.addEventListener("click", (_) => _on_click_event_handler("user-profile-button"));
-  action_buttons.toggle_location_button.addEventListener("click", (_) => _on_click_event_handler("toggle-location-button"));
 
   // Make text boxes interactive
   text_inputs.target_state.addEventListener("change", (_) => _on_change_event_handler("target-state"));
@@ -85,9 +83,6 @@ function _on_click_event_handler(from_component) {
         majoring_target: majoring_target,
         use_queer_scoring: use_queer_scoring,
       });
-
-      // Alert the user
-      alert("Your request has been sent!\n*Cool animation here*\nplease don't blow up my server");
 
       // Exit
       break;
@@ -124,10 +119,6 @@ function _on_click_event_handler(from_component) {
       // Request for an OAuth session
       send_as_json("oauth", "user-register");
 
-      // Exit
-      break;
-
-    case "toggle-location-button":
       // Exit
       break;
   }
@@ -211,7 +202,69 @@ window.addEventListener("transport_server_message", (args) => {
             // Invalid session
             case "INVALID_SESSION":
               // Alert the user to login to their Google account
-              alert("In order to use this website you must be signed in to a Google account!");
+              alert("Please login to a Google Account before using this site");
+
+              // Request for an OAuth session
+              send_as_json("oauth", "user-register");
+
+              // Break
+              break;
+
+            // Processing request
+            case "PROCESSING_REQUEST":
+              // List of possible messages
+              const messages = [
+                "Searching the cosmos...",
+                "Exploring distant galaxies...",
+                "Researching anomalies...",
+                "Planning your future...",
+                "Contemplating the meaning of existence...",
+                "Checking in with the locals...",
+                "Unraveling the unknown...",
+                "Charting new frontiers...",
+                "Redefining the impossible...",
+                "Building bridges to the future...",
+                "Synchronizing with the quantum realm...",
+              ];
+
+              // Local function for generating messages
+              function displayNewLoadingMessage() {
+                // Create a new message object
+                const message_object = document.createElement("div");
+
+                // Retrieve a random message
+                const message_content = messages[Math.round(Math.random() * messages.length)];
+
+                // Set size, location, and content
+                message_object.style.fontSize = `${Math.random() * 32 + 12}px`;
+                message_object.style.top = `${20 + Math.random() * 60}vh`;
+                message_object.textContent = message_content;
+
+                // Add to loading-message class
+                message_object.classList.add("loading-message");
+
+                // Parent to the DOM
+                document.body.appendChild(message_object);
+
+                setTimeout(() => message_object.remove(), 4.5 * 1000);
+              }
+
+              // Hide content
+              document.getElementById("content").style.visibility = "hidden";
+
+              // Trigger loading
+              document.body.classList.add("loading");
+
+              // Set interval
+              setInterval(displayNewLoadingMessage, 0.3 * 1000);
+
+              // Break
+              break;
+
+            // Processing done
+            case "PROCESSING_FINISHED":
+              // Redirect
+              window.location.href = response_args.url;
 
               // Break
               break;
