@@ -33,4 +33,4 @@ ENV SECRET_KEY="SECRET_KEY"
 HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 CMD [ "curl -f https://astrl.dev/healthcheck || exit 1" ]
 
 # Execute
-CMD [ "python3 /app/prod.py" ]
+CMD [ "python3", "/app/prod.py" ]
