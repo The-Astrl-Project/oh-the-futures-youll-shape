@@ -42,7 +42,7 @@ class Server:
     # Interfaces
 
     # Constants
-    __version__: Final[str] = "0.5.1-DEV"
+    __version__: Final[str] = "0.5.2-DEV"
 
     # Public Variables
 
@@ -64,9 +64,15 @@ class Server:
         # Apply middleware
         self._app.asgi_app = StatisticsMiddleware(self._app.asgi_app)
 
-        # Configure the server routes
+        # Server configuration
         self._app.errorhandler(404)(self._handle_client_error)
         self._app.before_request((self._handle_before_request))
+
+        # Astrl legal
+        self._app.route("/legal/tos", methods=["GET"])(self._handle_tos)
+        self._app.route("/legal/privacy", methods=["GET"])(self._handle_privacy)
+
+        # Web app routes
         self._app.route("/my-future", methods=["GET"])(self._handle_route_home)
         self._app.route("/callback", methods=["GET"])(self._handle_route_callback)
         self._app.websocket("/transport")(self._handle_route_websocket)
@@ -296,6 +302,14 @@ class Server:
     async def _handle_before_request(self) -> None:
         # Make sessions permanent
         quart.session.permanent = True
+
+    async def _handle_tos(self) -> str:
+        # Redirect
+        return quart.redirect("https://github.com/The-Astrl-Project/legal/blob/main/TOS.md")
+
+    async def _handle_privacy(self) -> str:
+        # Redirect
+        return quart.redirect("https://github.com/The-Astrl-Project/legal/blob/main/PRIVACY.md")
 
     async def _handle_route_home(self) -> str:
         # Populate the current session

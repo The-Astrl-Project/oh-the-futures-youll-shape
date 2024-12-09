@@ -48,6 +48,7 @@ function _hydrate_webpage() {
   action_buttons.settings_button = document.getElementById("settings-button");
   action_buttons.user_profile_button = document.getElementById("user-profile-button");
   action_buttons.toggle_queer_scoring = document.getElementById("use-queer-scoring");
+  action_buttons.astrl_legal_button = document.getElementById("astrl-legal-button");
 
   // Aggregate all found text inputs
   text_inputs.target_state = document.getElementById("target-state");
@@ -58,6 +59,7 @@ function _hydrate_webpage() {
   action_buttons.submit_button.addEventListener("click", (_) => _on_click_event_handler("submit-button"));
   action_buttons.settings_button.addEventListener("click", (_) => _on_click_event_handler("settings-button"));
   action_buttons.user_profile_button.addEventListener("click", (_) => _on_click_event_handler("user-profile-button"));
+  action_buttons.astrl_legal_button.addEventListener("click", (_) => _on_click_event_handler("astrl-legal-button"));
 
   // Make text boxes interactive
   text_inputs.target_state.addEventListener("change", (_) => _on_change_event_handler("target-state"));
@@ -122,6 +124,10 @@ function _on_click_event_handler(from_component) {
 
       // Exit
       break;
+
+    case "astrl-legal-button":
+      // Redirect to legal
+      window.location.href = "https://github.com/The-Astrl-Project/legal/blob/main/PRIVACY.md";
   }
 }
 
