@@ -72,7 +72,7 @@ label {
   padding: 10px; }
 
 /* Component Styles */
-.container, .container-settings {
+.container, .text-container, .container-settings {
   align-items: center;
   background-color: rgba(0, 0, 0, 0.8);
   border-radius: 10px;
@@ -141,3 +141,21 @@ label {
 
 .text-input {
   flex: 1; }
+
+.text-container {
+  align-items: baseline;
+  background-color: white;
+  border-radius: 10px;
+  flex-direction: column;
+  max-height: 80vh;
+  overflow-y: auto;
+  padding: 20px;
+  scrollbar-color: rgba(0, 0, 0, 0.8) transparent;
+  scrollbar-width: thin; }
+  .text-container ::-webkit-scrollbar {
+    width: 10px; }
+  .text-container ::-webkit-scrollbar-thumb {
+    background-color: rgba(0, 0, 0, 0.8);
+    border-radius: 5px; }
+  .text-container ::-webkit-scrollbar-track {
+    background-color: transparent; }

@@ -42,7 +42,7 @@ class Server:
     # Interfaces
 
     # Constants
-    __version__: Final[str] = "0.5.2-DEV"
+    __version__: Final[str] = "0.5.3-DEV"
 
     # Public Variables
 
@@ -304,12 +304,12 @@ class Server:
         quart.session.permanent = True
 
     async def _handle_tos(self) -> str:
-        # Redirect
-        return quart.redirect("https://github.com/The-Astrl-Project/legal/blob/main/TOS.md")
+        # Render the TOS
+        return await quart.render_template("terms.html")
 
     async def _handle_privacy(self) -> str:
-        # Redirect
-        return quart.redirect("https://github.com/The-Astrl-Project/legal/blob/main/PRIVACY.md")
+        # Render the privacy policy
+        return await quart.render_template("privacy.html")
 
     async def _handle_route_home(self) -> str:
         # Populate the current session

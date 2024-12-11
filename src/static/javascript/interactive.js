@@ -127,7 +127,7 @@ function _on_click_event_handler(from_component) {
 
     case "astrl-legal-button":
       // Redirect to legal
-      window.location.href = "https://github.com/The-Astrl-Project/legal/blob/main/PRIVACY.md";
+      window.location.pathname = "/legal/privacy";
   }
 }
 
