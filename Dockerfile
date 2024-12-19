@@ -22,7 +22,7 @@ COPY ./src/ .
 RUN pip3 install --upgrade -r ./requirements.txt
 
 # Setup the Debian environment
-RUN apt-get update && apt-get install gconf-service libasound2 libatk1.0-0 libatk-bridge2.0-0 libc6 libcairo2 libcups2 libdbus-1-3 libexpat1 libfontconfig1 libgcc1 libgconf-2-4 libgdk-pixbuf2.0-0 libglib2.0-0 libgtk-3-0 libnspr4 libpango-1.0-0 libpangocairo-1.0-0 libstdc++6 libx11-6 libx11-xcb1 libxcb1 libxcomposite1 libxcursor1 libxdamage1 libxext6 libxfixes3 libxi6 libxrandr2 libxrender1 libxss1 libxtst6 ca-certificates fonts-liberation libappindicator1 libnss3 lsb-release xdg-utils wget libcairo-gobject2 libxinerama1 libgtk2.0-0 libpangoft2-1.0-0 libthai0 libpixman-1-0 libxcb-render0 libharfbuzz0b libdatrie1 libgraphite2-3 libgbm1 -y
+RUN apt-get update && apt-get install ca-certificates curl fonts-liberation gconf-service libappindicator1 libasound2 libatk-bridge2.0-0 libatk1.0-0 libc6 libcairo-gobject2 libcairo2 libcups2 libdatrie1 libdbus-1-3 libexpat1 libfontconfig1 libgbm1 libgcc1 libgconf-2-4 libgdk-pixbuf2.0-0 libglib2.0-0 libgraphite2-3 libgtk-3-0 libgtk2.0-0 libharfbuzz0b libnspr4 libnss3 libpango-1.0-0 libpangocairo-1.0-0 libpangoft2-1.0-0 libpixman-1-0 libstdc++6 libthai0 libx11-6 libx11-xcb1 libxcb-render0 libxcb1 libxcomposite1 libxcursor1 libxdamage1 libxext6 libxfixes3 libxi6 libxinerama1 libxrandr2 libxrender1 libxss1 libxtst6 lsb-release wget xdg-utils -y
 
 # Install Chromium
 RUN pyppeteer-install
@@ -39,7 +39,7 @@ EXPOSE 443/tcp
 ENV SECRET_KEY="SECRET_KEY"
 
 # Healthcheck
-HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 CMD [ "curl -f https://astrl.dev/healthcheck || exit 1" ]
+HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 CMD [ "curl --fail https://astrl.dev/healthcheck || exit 1" ]
 
 # Execute
 CMD [ "/usr/bin/env", "bash", "./prod.sh" ]
