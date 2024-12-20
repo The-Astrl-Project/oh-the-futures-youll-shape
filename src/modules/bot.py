@@ -33,12 +33,13 @@ from bs4 import BeautifulSoup
 # ----------------------------------------------------------------
 
 # Constants
-__version__: Final[str] = "0.4.0-DEV"
+__version__: Final[str] = "0.5.0-DEV"
 __region_data_file_path__: Final[str] = "./data/region_data.csv"
+__college_board_major_data_file_path__: Final[str] = "./data/college_board_major_data.json"
 __available_web__indexers__: Final[dict] = {
     "universities": {
         "usnews": "https://www.usnews.com/best-colleges/{mixed_state_abrv}?_sort=rank&_sortDirection=asc",
-        "collegeboard": "https://bigfuture.collegeboard.org/college-search/filters?s={mixed_state_abrv}&txm={majoring_target}",
+        "collegeboard": "https://bigfuture.collegeboard.org/college-search/filters?s={mixed_state_abrv}&{majoring_topic}={majoring_target}",
     },
     "scholarships": {
         "careeronestop": "https://www.careeronestop.org/toolkit/training/find-scholarships.aspx?curPage={page_number}&pagesize=500&studyLevelfilter=High%20School&georestrictionfilter={mixed_state}",
@@ -95,7 +96,7 @@ class SearchUtils:
         query: Final[str] = possible_queries[0] if len(possible_queries) == 1 else possible_queries[-1]
 
         # Open the CSV file
-        with open(__region_data_file_path__, mode="r", encoding="utf-8") as file:
+        with open(file=__region_data_file_path__, mode="r", encoding="utf-8") as file:
             # Instance a new CSV reader
             file_reader: Final[csv._reader] = csv.reader(file, delimiter=",")
 
@@ -119,7 +120,7 @@ class SearchUtils:
         # Return None
         return None
 
-    def autocomplete_major_from_query(query: str) -> str:
+    def autocomplete_major_from_query(query: str) -> list[str]:
         """
         Returns a College Board recognizable major entry from the given ``query``.
 
@@ -129,8 +130,37 @@ class SearchUtils:
             The query string to convert
         """
 
-        # Return
-        return query.strip().lower().replace(" ", "-") or None
+        # Check if a blank string was just passed
+        if len(query.strip()) == 0:
+            # Return None
+            return None
+
+        # Clean up the query
+        query: Final[str] = query.strip().lower().replace(" ", "-")
+
+        # Open the JSON file
+        with open(file=__college_board_major_data_file_path__, mode="r", encoding="utf-8") as file:
+            # Load the JSON into memory
+            loaded_json: Final[dict] = json.load(fp=file)
+
+            # Iterate through the array
+            for index in range(0, len(loaded_json.get("major-id", []))):
+                # Retrieve the major
+                major: Final[str] = loaded_json.get("major-id", [])[index]
+
+                # Retrieve if it is a related major
+                is_related: Final[bool] = loaded_json.get("is-related", [])[index]
+
+                # Attempt to match the query
+                if major.startswith(query):
+                    # Return
+                    return [major, is_related]
+
+            # No matches found
+            file.close()
+
+        # Return None
+        return None
 
     # Public Inherited Methods
 
@@ -153,7 +183,7 @@ class SearchQuery:
     _search_query: dict = {
         "target_state": list[str],
         "current_state": list[str],
-        "majoring_target": str,
+        "majoring_target": list[str],
         "use_queer_scoring": bool,
     }
 
@@ -248,7 +278,7 @@ async def search(query: SearchQuery) -> dict:
             current_state_abrv=(
                 consolidated_data[1][3] if consolidated_data[1] is not None else None
             ),
-            majoring_target=(
+            majoring_target_info=(
                 consolidated_data[2] if consolidated_data[2] is not None else None
             ),
         ),
@@ -729,7 +759,7 @@ async def _search_for_scholarships(target_state: str, current_state: str) -> dic
     # Return
     return return_data
 
-async def _search_for_universities(target_state_abrv: str, current_state_abrv: str, majoring_target: str) -> dict:
+async def _search_for_universities(target_state_abrv: str, current_state_abrv: str, majoring_target_info: list[str]) -> dict:
     async def _extract(web_response: any, web_source: str) -> list[dict]:
         """
         Handles the extraction of university information from the given ``web_response``.
@@ -918,13 +948,27 @@ async def _search_for_universities(target_state_abrv: str, current_state_abrv: s
             A reference to the return data object
         """
 
+        # Define majoring info
+        majoring_topic: str
+        majoring_target: str
+
+        # Sanity check
+        if majoring_target_info is not None:
+            # Populate
+            majoring_topic = "txa" if majoring_target_info[1] == False else "txm"
+            majoring_target = majoring_target_info[0]
+        else:
+            # Set to sane defaults
+            majoring_topic = "txa"
+            majoring_target = ""
+
         # Check the target state first
         if target_state_abrv is not None:
             # Format the URL
             formatted_url_collegeboard: Final[str] = (
                 __available_web__indexers__.get("universities", None)
                 .get("collegeboard", None)
-                .format(mixed_state_abrv=target_state_abrv, majoring_target=majoring_target or "")
+                .format(mixed_state_abrv=target_state_abrv, majoring_topic=majoring_topic, majoring_target=majoring_target)
                 .replace(" ", "%20")
             )
 
@@ -953,7 +997,7 @@ async def _search_for_universities(target_state_abrv: str, current_state_abrv: s
             formatted_url_collegeboard: Final[str] = (
                 __available_web__indexers__.get("universities", None)
                 .get("collegeboard", None)
-                .format(mixed_state_abrv=current_state_abrv, majoring_target=majoring_target or "")
+                .format(mixed_state_abrv=target_state_abrv, majoring_topic=majoring_topic, majoring_target=majoring_target)
                 .replace(" ", "%20")
             )
 
@@ -1320,7 +1364,7 @@ if __name__ == "__main__":
             SearchQuery(
                 target_state="CA",
                 current_state="Florida",
-                majoring_target="",
+                majoring_target="Computer Science",
                 use_queer_scoring=True,
             )
         )

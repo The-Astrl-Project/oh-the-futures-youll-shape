@@ -42,7 +42,7 @@ class Server:
     # Interfaces
 
     # Constants
-    __version__: Final[str] = "0.5.3-DEV"
+    __version__: Final[str] = "0.5.4-DEV"
 
     # Public Variables
 
@@ -493,18 +493,29 @@ class Server:
 
                             # Check if the major or state should be auto-completed
                             if request_args.get("target", None) == "majoring-target":
-                                # Major autocomplete
-                                autocomplete_results = (
+                                # Autocomplete the major
+                                major: Final[list[str]] = (
                                     SearchUtils.autocomplete_major_from_query(
                                         query=request_args.get("input", None)
                                     )
                                 )
+
+                                # Sanity check
+                                if major is not None:
+                                    # Parse and format the data
+                                    autocomplete_results = major[0]
                             else:
                                 # Autocomplete the region
-                                region: Final[list[str]] = SearchUtils.autocomplete_region_from_query(query=request_args.get("input", None))
+                                region: Final[list[str]] = (
+                                    SearchUtils.autocomplete_region_from_query(
+                                        query=request_args.get("input", None)
+                                    )
+                                )
 
-                                # Parse and format the data
-                                autocomplete_results = f"{region[4]}, {region[2]}"
+                                # Sanity check
+                                if region is not None:
+                                    # Parse and format the data
+                                    autocomplete_results = f"{region[4]}, {region[2]}"
 
                             # Check if a valid result was return
                             if autocomplete_results is None:
@@ -544,9 +555,8 @@ class Server:
                                 )
                             )
 
-
                             # Grab the value of is_prod
-                            use_production_uri: Final[bool] = self._quart_configuration.get("IS_PROD")
+                            use_production_uri: Final[bool] = self._quart_configuration.get("IS_PROD", False)
 
                             # Check if we're in production or development
                             if use_production_uri == True:

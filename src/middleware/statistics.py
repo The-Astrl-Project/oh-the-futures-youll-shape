@@ -11,8 +11,8 @@
 
 # Import Statements
 # ----------------------------------------------------------------
+import os
 import json
-from os.path import exists
 from typing import Final
 # ---
 
@@ -52,18 +52,23 @@ class StatisticsMiddleware:
         self._quart_app = quart_app
         self._log_file_name = log_file_name
 
+        # Check if a logging folder exist
+        if os.path.exists(path="./logs") != True:
+            # Create a logging folder
+            os.mkdir(path="./logs")
+
         # Check if a log file exists
-        if exists(self._log_file_name) == True:
+        if os.path.isfile(path=self._log_file_name) == True:
             # Load the previous log file
-            with open(self._log_file_name, "r") as log_file:
+            with open(file=self._log_file_name, mode="r") as log_file:
                 # Load the JSON file
-                self._stats_data_dict = json.load(log_file)
+                self._stats_data_dict = json.load(fp=log_file)
 
                 # Close the file
                 log_file.close()
         else:
             # Create a new log file
-            with open(self._log_file_name, "x") as log_file:
+            with open(file=self._log_file_name, mode="x") as log_file:
                 # To avoid parsing errors
                 log_file.write('{"routes": {}, "addresses": {}, "args": {}}')
 
@@ -81,23 +86,11 @@ class StatisticsMiddleware:
         request_route: Final[str] = scope.get("path", None)
 
         # Update the stats dict
-        self._stats_data_dict["routes"][request_route] = (
-            1
-            + self._stats_data_dict.get("routes", None)
-            .get(request_route, 0)
-        )
-        self._stats_data_dict["addresses"][request_address] = (
-            1
-            + self._stats_data_dict.get("routes", None)
-            .get(request_address, 0)
-        )
+        self._stats_data_dict["routes"][request_route] = 1 + self._stats_data_dict.get("routes", None).get(request_route, 0)
+        self._stats_data_dict["addresses"][request_address] = 1 + self._stats_data_dict.get("routes", None).get(request_address, 0)
 
         # Collect the passed args and update their values
-        request_args_list: Final[list[str]] = (
-            scope.get("query_string", None)
-            .decode("utf-8")
-            .split("&")
-        )
+        request_args_list: Final[list[str]] = scope.get("query_string", None).decode("utf-8").split("&")
 
         for request_arg in request_args_list:
             # Check if any args were sent in the request
