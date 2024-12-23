@@ -30,6 +30,7 @@ import { send_as_json } from "./transport.js";
 // Public Variables
 let text_inputs = {};
 let action_buttons = {};
+let simulated_windows = {};
 
 // Private Variables
 
@@ -49,22 +50,30 @@ function _hydrate_webpage() {
   action_buttons.user_profile_button = document.getElementById("user-profile-button");
   action_buttons.toggle_queer_scoring = document.getElementById("use-queer-scoring");
   action_buttons.astrl_legal_button = document.getElementById("astrl-legal-button");
+  action_buttons.next_slide_button = document.getElementById("next-slide-button");
 
   // Aggregate all found text inputs
   text_inputs.target_state = document.getElementById("target-state");
   text_inputs.current_state = document.getElementById("current-state");
   text_inputs.majoring_target = document.getElementById("majoring-target");
 
+  // Aggregate all simulated windows
+  simulated_windows.quick_start = document.getElementById("quick-start-window");
+
   // Make buttons interactive
   action_buttons.submit_button.addEventListener("click", (_) => _on_click_event_handler("submit-button"));
   action_buttons.settings_button.addEventListener("click", (_) => _on_click_event_handler("settings-button"));
   action_buttons.user_profile_button.addEventListener("click", (_) => _on_click_event_handler("user-profile-button"));
   action_buttons.astrl_legal_button.addEventListener("click", (_) => _on_click_event_handler("astrl-legal-button"));
+  action_buttons.next_slide_button.addEventListener("click", () => _on_click_event_handler("next-slide-button"));
 
   // Make text boxes interactive
   text_inputs.target_state.addEventListener("change", (_) => _on_change_event_handler("target-state"));
   text_inputs.current_state.addEventListener("change", (_) => _on_change_event_handler("current-state"));
   text_inputs.majoring_target.addEventListener("change", (_) => _on_change_event_handler("majoring-target"));
+
+  // Check if the quick start window should be shown
+  send_as_json("data", "show-quick-start");
 
   // Request the current user's profile image
   send_as_json("data", "user-profile-image");
@@ -128,6 +137,35 @@ function _on_click_event_handler(from_component) {
     case "astrl-legal-button":
       // Redirect to legal
       window.location.pathname = "/legal/privacy";
+
+    case "next-slide-button":
+      // List of slide and text combo objects
+      const slide_data = [
+        { slide: "../static/gifs/slide_0.gif", text: "Enter the state where you plan to study." },
+        { slide: "../static/gifs/slide_1.gif", text: "Click on the gear icon to fill in optional data." },
+        { slide: "../static/gifs/slide_2.gif", text: "Click on the submit button to send your request." },
+        { slide: "../static/gifs/slide_3.gif", text: "If prompted, login in to your Google account." },];
+
+      // Retrieve the slide and text objects
+      const slide_obj = document.getElementById("container-window-slide");
+      const slide_text_obj = document.getElementById("container-window-slide-text");
+
+      // Parse the source
+      const split_items = slide_obj.src.split("/");
+      const index = Number(split_items[split_items.length - 1].replace("slide_", "").replace(".gif", ""));
+
+      // Bounds check
+      if (index != 3) {
+        // Update the slide info
+        slide_obj.src = `${slide_data[(index + 1)].slide}`;
+        slide_text_obj.innerHTML = slide_data[(index + 1)].text;
+
+        // Exit
+        return;
+      }
+
+      // Hide the popup
+      simulated_windows.quick_start.style.display = "none";
   }
 }
 
@@ -294,6 +332,16 @@ window.addEventListener("transport_server_message", (args) => {
           // Exit
           break;
       }
+
+    case "show-quick-start":
+      // Retrieve the server response
+      const shouldShow = response_args.show;
+
+      // Check
+      if (shouldShow === true) {
+        // Show the popup
+        simulated_windows.quick_start.style.display = "flex";
+      };
 
       // Exit
       break;

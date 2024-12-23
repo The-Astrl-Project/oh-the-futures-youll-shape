@@ -87,7 +87,7 @@ class StatisticsMiddleware:
 
         # Update the stats dict
         self._stats_data_dict["routes"][request_route] = 1 + self._stats_data_dict.get("routes", None).get(request_route, 0)
-        self._stats_data_dict["addresses"][request_address] = 1 + self._stats_data_dict.get("routes", None).get(request_address, 0)
+        self._stats_data_dict["addresses"][request_address] = 1 + self._stats_data_dict.get("addresses", None).get(request_address, 0)
 
         # Collect the passed args and update their values
         request_args_list: Final[list[str]] = scope.get("query_string", None).decode("utf-8").split("&")

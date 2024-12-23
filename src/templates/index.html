@@ -28,9 +28,29 @@
   <!-- Site functionality -->
   <script src="../static/javascript/transport.js" type="module"></script>
   <script src="../static/javascript/interactive.js" type="module"></script>
+
+  <!-- Preload GIFs || Maybe not ideal -->
+  <link rel="prefetch" href="../static/gifs/slide_0.gif">
+  <link rel="prefetch" href="../static/gifs/slide_1.gif">
+  <link rel="prefetch" href="../static/gifs/slide_2.gif">
+  <link rel="prefetch" href="../static/gifs/slide_3.gif">
 </head>
 <body>
   <div id="content">
+    <!-- First launch -->
+    <div class="container-window-overlay" id="quick-start-window">
+      <div class="container-window">
+        <span class="container-window-title">Quick Start</span>
+        <div class="container-window-content">
+          <img id="container-window-slide" src="../static/gifs/slide_0.gif">
+          <p id="container-window-slide-text">Enter the state where you plan to study.</p>
+        </div>
+        <div>
+          <button class="primary-action-button" id="next-slide-button" style="font-size: 1.5rem;">Continue</button>
+        </div>
+      </div>
+    </div>
+
     <!-- Content -->
     <div class="container">
       <button class="secondary-action-button" id="settings-button" style="padding: 10px">

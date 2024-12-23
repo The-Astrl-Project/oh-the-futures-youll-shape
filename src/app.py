@@ -42,7 +42,7 @@ class Server:
     # Interfaces
 
     # Constants
-    __version__: Final[str] = "0.5.4-DEV"
+    __version__: Final[str] = "0.6.4-DEV"
 
     # Public Variables
 
@@ -229,9 +229,7 @@ class Server:
                                                 "values": [
                                                     {
                                                         "userEnteredValue": {
-                                                            "stringValue": key.replace(
-                                                                "_", " "
-                                                            ).title()
+                                                            "stringValue": key.replace("_", " ").title()
                                                         }
                                                     }
                                                 ]
@@ -317,6 +315,14 @@ class Server:
             # Create a new state and credentials session
             quart.session["state"] = None
             quart.session["credentials"] = None
+
+        # Is the user new?
+        if "first-time" not in quart.session:
+            # Set to true
+            quart.session["first-time"] = True
+        elif quart.session.get("first-time", True) == True:
+            # Set to false
+            quart.session["first-time"] = False
 
         # Render the homepage
         return await quart.render_template("index.html")
@@ -535,6 +541,18 @@ class Server:
                                 response_type=request_type,
                                 response_data=request_data,
                                 response_args={"results": autocomplete_results, "target": request_args.get("target", None)},
+                                transport_client_id=transport_client_id,
+                            )
+
+                            # Next iteration
+                            continue
+
+                        case "show-quick-start":
+                            # Return cookie data
+                            await send_as_json(
+                                response_type=request_type,
+                                response_data=request_data,
+                                response_args={"show": quart.session.get("first-time", True)},
                                 transport_client_id=transport_client_id,
                             )
 

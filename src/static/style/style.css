@@ -72,7 +72,7 @@ label {
   padding: 10px; }
 
 /* Component Styles */
-.container, .text-container, .container-settings {
+.container, .text-container, .container-window-overlay, .container-window, .container-settings {
   align-items: center;
   background-color: rgba(0, 0, 0, 0.8);
   border-radius: 10px;
@@ -121,6 +121,36 @@ label {
 .container-settings.active {
   opacity: 1;
   transform: translate(-50%, 0px); }
+
+.container-window {
+  box-sizing: border-box;
+  flex-direction: column;
+  max-height: 90vh;
+  max-width: 600px;
+  overflow: hidden;
+  position: relative;
+  width: 100%; }
+
+.container-window-content > p {
+  color: white;
+  text-align: center; }
+
+.container-window-overlay {
+  border-radius: 0px;
+  box-sizing: border-box;
+  display: none;
+  height: 100%;
+  justify-content: center;
+  left: 0;
+  position: fixed;
+  top: 0;
+  width: 100%;
+  z-index: 1000; }
+
+.container-window-title {
+  color: white;
+  font-size: 2rem;
+  font-weight: bold; }
 
 .loading-message {
   animation: scroll-left 5s linear infinite;

@@ -39,7 +39,7 @@ EXPOSE 443/tcp
 ENV SECRET_KEY="SECRET_KEY"
 
 # Healthcheck
-HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 CMD [ "wget --no-verbose --tries=1 --spider https://astrl.dev/healthcheck || exit 1" ]
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 CMD [ "wget --no-verbose --tries=1 --spider https://localhost:443/healthcheck || exit 1" ]
 
 # Execute
 CMD [ "/usr/bin/env", "bash", "./prod.sh" ]

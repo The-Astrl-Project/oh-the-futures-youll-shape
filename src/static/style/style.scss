@@ -130,6 +130,7 @@ label {
       opacity: 0;
       transform: translate(-50%, 20px);
     }
+
     to {
       opacity: 1;
       transform: translate(-50%, 0px);
@@ -141,6 +142,7 @@ label {
       opacity: 1;
       transform: translate(-50%, 0px);
     }
+
     to {
       opacity: 0;
       transform: translate(-50%, 20px);
@@ -151,6 +153,42 @@ label {
 .container-settings.active {
   opacity: 1;
   transform: translate(-50%, 0px);
+}
+
+.container-window {
+  @extend .container;
+  box-sizing: border-box;
+  flex-direction: column;
+  max-height: 90vh;
+  max-width: 600px;
+  overflow: hidden;
+  position: relative;
+  width: 100%;
+}
+
+.container-window-content>p {
+  color: $color-tertiary;
+  text-align: center;
+}
+
+.container-window-overlay {
+  @extend .container;
+  border-radius: 0px;
+  box-sizing: border-box;
+  display: none;
+  height: 100%;
+  justify-content: center;
+  left: 0;
+  position: fixed;
+  top: 0;
+  width: 100%;
+  z-index: 1000;
+}
+
+.container-window-title {
+  color: $color-tertiary;
+  font-size: 2rem;
+  font-weight: bold;
 }
 
 .loading-message {
@@ -168,6 +206,7 @@ label {
     0% {
       left: 100%;
     }
+
     100% {
       left: -100%;
     }
