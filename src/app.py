@@ -42,7 +42,7 @@ class Server:
     # Interfaces
 
     # Constants
-    __version__: Final[str] = "0.6.5-DEV"
+    __version__: Final[str] = "0.6.6-DEV"
 
     # Public Variables
 
@@ -74,7 +74,7 @@ class Server:
         self._app.route("/legal/privacy", methods=["GET"])(self._handle_privacy)
 
         # Web app routes
-        self._app.route("/my-future", methods=["GET"])(self._handle_route_home)
+        self._app.route("/oh-the-futures-youll-shape", methods=["GET"])(self._handle_route_home)
         self._app.route("/callback", methods=["GET"])(self._handle_route_callback)
         self._app.websocket("/transport")(self._handle_route_websocket)
 

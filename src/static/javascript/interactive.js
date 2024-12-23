@@ -85,10 +85,10 @@ function _on_click_event_handler(from_component) {
   switch (from_component) {
     case "submit-button":
       // Extract all applicable data
-      const target_state = text_inputs.target_state.value;
-      const current_state = text_inputs.current_state.value;
-      const majoring_target = text_inputs.majoring_target.value;
-      const use_queer_scoring = action_buttons.toggle_queer_scoring.checked;
+      const target_state = text_inputs.target_state.value || null;
+      const current_state = text_inputs.current_state.value || null;
+      const majoring_target = text_inputs.majoring_target.value || null;
+      const use_queer_scoring = action_buttons.toggle_queer_scoring.checked || null;
 
       // Send to server for validation and submission
       send_as_json("data", "search", {
