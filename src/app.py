@@ -42,7 +42,7 @@ class Server:
     # Interfaces
 
     # Constants
-    __version__: Final[str] = "0.6.4-DEV"
+    __version__: Final[str] = "0.6.5-DEV"
 
     # Public Variables
 
@@ -69,6 +69,7 @@ class Server:
         self._app.before_request((self._handle_before_request))
 
         # Astrl legal
+        self._app.route("/about-us", methods=["GET"])(self._handle_about_us)
         self._app.route("/legal/tos", methods=["GET"])(self._handle_tos)
         self._app.route("/legal/privacy", methods=["GET"])(self._handle_privacy)
 
@@ -308,6 +309,10 @@ class Server:
     async def _handle_privacy(self) -> str:
         # Render the privacy policy
         return await quart.render_template("privacy.html")
+
+    async def _handle_about_us(self) -> str:
+        # Render the about us page
+        return await quart.render_template("about.html")
 
     async def _handle_route_home(self) -> str:
         # Populate the current session

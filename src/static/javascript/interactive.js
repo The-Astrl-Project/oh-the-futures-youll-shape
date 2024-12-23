@@ -51,6 +51,7 @@ function _hydrate_webpage() {
   action_buttons.toggle_queer_scoring = document.getElementById("use-queer-scoring");
   action_buttons.astrl_legal_button = document.getElementById("astrl-legal-button");
   action_buttons.next_slide_button = document.getElementById("next-slide-button");
+  action_buttons.astrl_about_button = document.getElementById("astrl-about-button");
 
   // Aggregate all found text inputs
   text_inputs.target_state = document.getElementById("target-state");
@@ -66,6 +67,7 @@ function _hydrate_webpage() {
   action_buttons.user_profile_button.addEventListener("click", (_) => _on_click_event_handler("user-profile-button"));
   action_buttons.astrl_legal_button.addEventListener("click", (_) => _on_click_event_handler("astrl-legal-button"));
   action_buttons.next_slide_button.addEventListener("click", () => _on_click_event_handler("next-slide-button"));
+  action_buttons.astrl_about_button.addEventListener("click", () => _on_click_event_handler("astrl-about-button"));
 
   // Make text boxes interactive
   text_inputs.target_state.addEventListener("change", (_) => _on_change_event_handler("target-state"));
@@ -138,13 +140,16 @@ function _on_click_event_handler(from_component) {
       // Redirect to legal
       window.location.pathname = "/legal/privacy";
 
+      // Exit
+      break;
+
     case "next-slide-button":
       // List of slide and text combo objects
       const slide_data = [
-        { slide: "../static/gifs/slide_0.gif", text: "Enter the state where you plan to study." },
-        { slide: "../static/gifs/slide_1.gif", text: "Click on the gear icon to fill in optional data." },
-        { slide: "../static/gifs/slide_2.gif", text: "Click on the submit button to send your request." },
-        { slide: "../static/gifs/slide_3.gif", text: "If prompted, login in to your Google account." },];
+        { slide: "../static/videos/slide_0.webm", text: "Enter the state where you plan to study." },
+        { slide: "../static/videos/slide_1.webm", text: "Click on the gear icon to fill in optional data." },
+        { slide: "../static/videos/slide_2.webm", text: "Click on the submit button to send your request." },
+        { slide: "../static/videos/slide_3.webm", text: "If prompted, login in to your Google account." },];
 
       // Retrieve the slide and text objects
       const slide_obj = document.getElementById("container-window-slide");
@@ -152,7 +157,7 @@ function _on_click_event_handler(from_component) {
 
       // Parse the source
       const split_items = slide_obj.src.split("/");
-      const index = Number(split_items[split_items.length - 1].replace("slide_", "").replace(".gif", ""));
+      const index = Number(split_items[split_items.length - 1].replace("slide_", "").replace(".webm", ""));
 
       // Bounds check
       if (index != 3) {
@@ -166,6 +171,16 @@ function _on_click_event_handler(from_component) {
 
       // Hide the popup
       simulated_windows.quick_start.style.display = "none";
+
+      // Exit
+      break;
+
+    case "astrl-about-button":
+      // Redirect to about
+      window.location.pathname = "/about-us";
+
+      // Exit
+      break;
   }
 }
 
