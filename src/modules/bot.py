@@ -43,7 +43,7 @@ __available_web__indexers__: Final[dict] = {
     },
     "scholarships": {
         "careeronestop": "https://www.careeronestop.org/toolkit/training/find-scholarships.aspx?curPage={page_number}&pagesize=500&studyLevelfilter=High%20School&georestrictionfilter={mixed_state}",
-        "scholarshipamerica": "https://scholarshipamerica.org/students/browse-scholarships/?fwp_state_territory={mixed_state}&fwp_paged={page_number}",
+        "scholarshipamerica": "https://scholarshipamerica.org/students/browse-scholarships/?_application_status=open&_state_territory={mixed_state}%2Cnational&_paged={page_number}",
     },
     "living_costs": {
         "numbeo": "https://www.numbeo.com/cost-of-living/compare_cities.jsp?country1=United+States&city1={current_city}%2C+{current_state_abrv}&country2=United+States&city2={target_city}%2C+{target_state_abrv}"
@@ -527,26 +527,26 @@ async def _search_for_scholarships(target_state: str, current_state: str) -> dic
                         )
                     )
 
-            # Source: https://scholarshipamerica.org/students/browse-scholarships/?fwp_state_territory=florida&fwp_paged=0
+            # Source: https://scholarshipamerica.org/students/browse-scholarships/?_application_status=open&_state_territory=florida%2Cnational&_paged=1
             case "scholarshipamerica":
                 # Retrieve the available scholarships table
                 scholarships_table = (
                     parser.find("div", attrs={"class": "facetwp-template"})
-                    .find_all("article", attrs={"class": "scholarship"})
+                    .find_all("article", attrs={"class": "mgpb-listing-item--scholarship"})
                 )
 
                 # Iterate through each table row
                 for scholarship_entry in scholarships_table:
                     # Retrieve the scholarship URL
                     scholarship_url: Final[str] = (
-                        scholarship_entry.find("a", attrs={"class": "text-btn"})["href"]
+                        scholarship_entry.find("a", attrs={"class": "mgpb-listing-item__heading"})["href"]
                         .strip()
                         .replace(" ", "%20")
                     )
 
                     # Retrieve the organization funding the scholarship
                     scholarship_organization_name: Final[str] = (
-                        scholarship_entry.find("h3")
+                        scholarship_entry.find("a", attrs={"class": "mgpb-listing-item__heading"})
                         .get_text()
                         .strip()
                         .replace("\n", " ")
@@ -555,29 +555,39 @@ async def _search_for_scholarships(target_state: str, current_state: str) -> dic
 
                     # Retrieve the purpose of the scholarship
                     scholarship_organization_purpose: Final[str] = (
-                        scholarship_entry.find("div", attrs={"class": "info"})
-                        .find("p")
+                        scholarship_entry.find("span", attrs={"class": "text-body-copy"})
                         .get_text()
                         .strip()
                         .replace("\n", " ")
                         .replace("\xa0", " ")
-                        or
-                        scholarship_entry.find("div", attrs={"class": "info"})
-                        .find("span", attr={"data-contrast": "auto"})
-                        .get_text()
-                        .strip()
-                        .replace("\n", " ")
-                        .replace("\xa0", " ")
+                        .replace("\u202f", " ")
+                        .replace("\u2019", "'")
                     )
 
                     # Retrieve the scholarship award type
                     scholarship_award_type: Final[str] = "Scholarship"
 
                     # Retrieve the scholarship award amount
-                    scholarship_award_amount: Final[str] = "Unknown"
+                    scholarship_award_amount: Final[str] = (
+                        scholarship_entry.find("ul", attrs={"class": "mgpb-listing-item__scholarship-details"})
+                        .find_all("li")[1]
+                        .find_all("span")[1]
+                        .get_text()
+                        .strip()
+                        .replace("\n", " ")
+                        .replace("\xa0", " ")
+                    )
 
                     # Retrieve the scholarship submission date
-                    scholarship_submission_date: Final[str] = "Unknown"
+                    scholarship_submission_date: Final[str] = (
+                        scholarship_entry.find("ul", attrs={"class": "mgpb-listing-item__scholarship-details"})
+                        .find_all("li")[2]
+                        .find_all("span")[1]
+                        .get_text()
+                        .strip()
+                        .replace("\n", " ")
+                        .replace("\xa0", " ")
+                    ) or "Unknown"
 
                     # Clean up the JSON and append it to the return object
                     return_data.append(
@@ -660,7 +670,7 @@ async def _search_for_scholarships(target_state: str, current_state: str) -> dic
             # Check the target state first
             if target_state is not None:
                 # Iterate through 10 pages
-                for page_number in range(0, 10):
+                for page_number in range(1, 10):
                     # Format the URL
                     formatted_url_scholarshipamerica: Final[str] = (
                         __available_web__indexers__.get("scholarships", None)
@@ -675,7 +685,7 @@ async def _search_for_scholarships(target_state: str, current_state: str) -> dic
                     # Check if a valid response was returned
                     if response is None:
                         # Check if this is the first iteration or Nth iteration
-                        if page_number == 0:
+                        if (page_number - 1) == 0:
                             return_data["target_state"]["scholarshipamerica"] = None
                         else:
                             # Reached the end of available scholarships || Exit the loop
@@ -687,19 +697,20 @@ async def _search_for_scholarships(target_state: str, current_state: str) -> dic
                     # Check if the parsed data contains any scholarships
                     if len(parsed_data) == 0:
                         # Check if this is the first iteration or Nth iteration
-                        if page_number == 0:
+                        if (page_number - 1) == 0:
                             return_data["target_state"]["scholarshipamerica"] = None
                         else:
                             # Reached the end of available scholarships || Exit the loop
                             break
 
-                    # Store the results
-                    return_data["target_state"]["scholarshipamerica"] = parsed_data
+                    # Store the results || This is horrible but we ball
+                    for obj in parsed_data:
+                        return_data["target_state"]["scholarshipamerica"].append(obj)
 
             # Check the current state next
             if current_state is not None:
                 # Iterate through 10 pages
-                for page_number in range(0, 10):
+                for page_number in range(1, 10):
                     # Format the URL
                     formatted_url_scholarshipamerica: Final[str] = (
                         __available_web__indexers__.get("scholarships", None)
@@ -714,7 +725,7 @@ async def _search_for_scholarships(target_state: str, current_state: str) -> dic
                     # Check if a valid response was returned
                     if response is None:
                         # Check if this is the first iteration or Nth iteration
-                        if page_number == 0:
+                        if (page_number - 1) == 0:
                             return_data["current_state"]["scholarshipamerica"] = None
                         else:
                             # Reached the end of available scholarships || Exit the loop
@@ -726,14 +737,15 @@ async def _search_for_scholarships(target_state: str, current_state: str) -> dic
                     # Check if the parsed data contains any scholarships
                     if len(parsed_data) == 0:
                         # Check if this is the first iteration or Nth iteration
-                        if page_number == 0:
+                        if (page_number - 1) == 0:
                             return_data["current_state"]["scholarshipamerica"] = None
                         else:
                             # Reached the end of available scholarships || Exit the loop
                             break
 
-                    # Store the results
-                    return_data["current_state"]["scholarshipamerica"] = parsed_data
+                    # Store the results || This is horrible but we ball
+                    for obj in parsed_data:
+                        return_data["current_state"]["scholarshipamerica"].append(obj)
 
         # Search for scholarships in "parallel"
         await asyncio.gather(
