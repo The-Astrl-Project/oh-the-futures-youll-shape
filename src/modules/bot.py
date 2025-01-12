@@ -569,25 +569,45 @@ async def _search_for_scholarships(target_state: str, current_state: str) -> dic
 
                     # Retrieve the scholarship award amount
                     scholarship_award_amount: Final[str] = (
-                        scholarship_entry.find("ul", attrs={"class": "mgpb-listing-item__scholarship-details"})
-                        .find_all("li")[1]
-                        .find_all("span")[1]
-                        .get_text()
-                        .strip()
-                        .replace("\n", " ")
-                        .replace("\xa0", " ")
+                        (
+                            "Unknown"
+                        )
+                        if (scholarship_entry.find("ul", attrs={"class": "mgpb-listing-item__scholarship-details"}).find("span", attrs={"class": "scham-icon scham-icon-usd-circle"}) is None)
+                        else
+                        (
+                            scholarship_entry.find("ul", attrs={"class": "mgpb-listing-item__scholarship-details"})
+                            .find_all("li")[1]
+                            .find_all("span")[1]
+                            .get_text()
+                            .strip()
+                            .replace("\n", " ")
+                            .replace("\xa0", " ")
+                        )
                     )
 
                     # Retrieve the scholarship submission date
                     scholarship_submission_date: Final[str] = (
-                        scholarship_entry.find("ul", attrs={"class": "mgpb-listing-item__scholarship-details"})
-                        .find_all("li")[2]
-                        .find_all("span")[1]
-                        .get_text()
-                        .strip()
-                        .replace("\n", " ")
-                        .replace("\xa0", " ")
-                    ) or "Unknown"
+                        (
+                            scholarship_entry.find("ul", attrs={"class": "mgpb-listing-item__scholarship-details"})
+                            .find_all("li")[1]
+                            .find_all("span")[1]
+                            .get_text()
+                            .strip()
+                            .replace("\n", " ")
+                            .replace("\xa0", " ")
+                        )
+                        if (scholarship_award_amount == "Unknown")
+                        else
+                        (
+                            scholarship_entry.find("ul", attrs={"class": "mgpb-listing-item__scholarship-details"})
+                            .find_all("li")[2]
+                            .find_all("span")[1]
+                            .get_text()
+                            .strip()
+                            .replace("\n", " ")
+                            .replace("\xa0", " ")
+                        )
+                    )
 
                     # Clean up the JSON and append it to the return object
                     return_data.append(
@@ -1009,7 +1029,7 @@ async def _search_for_universities(target_state_abrv: str, current_state_abrv: s
             formatted_url_collegeboard: Final[str] = (
                 __available_web__indexers__.get("universities", None)
                 .get("collegeboard", None)
-                .format(mixed_state_abrv=target_state_abrv, majoring_topic=majoring_topic, majoring_target=majoring_target)
+                .format(mixed_state_abrv=current_state_abrv, majoring_topic=majoring_topic, majoring_target=majoring_target)
                 .replace(" ", "%20")
             )
 
