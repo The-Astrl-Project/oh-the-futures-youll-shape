@@ -42,7 +42,7 @@ class Server:
     # Interfaces
 
     # Constants
-    __version__: Final[str] = "0.6.6-DEV"
+    __version__: Final[str] = "0.6.7-DEV"
 
     # Public Variables
 
@@ -466,7 +466,7 @@ class Server:
                             target_state: Final[str] = request_args.get("target_state", None)
                             current_state: Final[str] = request_args.get("current_state", None)
                             majoring_target: Final[str] = request_args.get("majoring_target", None)
-                            use_queer_scoring: Final[str] = request_args.get("use_queer_scoring", None)
+                            use_equality_scoring: Final[str] = request_args.get("use_equality_scoring", None)
 
                             # Send a search request
                             response: Final[dict] = await search(
@@ -474,7 +474,7 @@ class Server:
                                     target_state=target_state,
                                     current_state=current_state,
                                     majoring_target=majoring_target,
-                                    use_queer_scoring=use_queer_scoring,
+                                    use_equality_scoring=use_equality_scoring,
                                 )
                             )
 

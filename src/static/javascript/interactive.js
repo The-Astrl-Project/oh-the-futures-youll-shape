@@ -48,7 +48,7 @@ function _hydrate_webpage() {
   action_buttons.submit_button = document.getElementById("submit-button");
   action_buttons.settings_button = document.getElementById("settings-button");
   action_buttons.user_profile_button = document.getElementById("user-profile-button");
-  action_buttons.toggle_queer_scoring = document.getElementById("use-queer-scoring");
+  action_buttons.toggle_equality_scoring = document.getElementById("use-equality-scoring");
   action_buttons.astrl_legal_button = document.getElementById("astrl-legal-button");
   action_buttons.next_slide_button = document.getElementById("next-slide-button");
   action_buttons.astrl_about_button = document.getElementById("astrl-about-button");
@@ -88,14 +88,14 @@ function _on_click_event_handler(from_component) {
       const target_state = text_inputs.target_state.value || null;
       const current_state = text_inputs.current_state.value || null;
       const majoring_target = text_inputs.majoring_target.value || null;
-      const use_queer_scoring = action_buttons.toggle_queer_scoring.checked || null;
+      const use_equality_scoring = action_buttons.toggle_equality_scoring.checked || null;
 
       // Send to server for validation and submission
       send_as_json("data", "search", {
         target_state: target_state,
         current_state: current_state,
         majoring_target: majoring_target,
-        use_queer_scoring: use_queer_scoring,
+        use_equality_scoring: use_equality_scoring,
       });
 
       // Exit

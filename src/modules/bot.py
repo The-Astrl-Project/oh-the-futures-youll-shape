@@ -33,7 +33,7 @@ from bs4 import BeautifulSoup
 # ----------------------------------------------------------------
 
 # Constants
-__version__: Final[str] = "0.5.0-DEV"
+__version__: Final[str] = "0.5.2-DEV"
 __region_data_file_path__: Final[str] = "./data/region_data.csv"
 __college_board_major_data_file_path__: Final[str] = "./data/college_board_major_data.json"
 __available_web__indexers__: Final[dict] = {
@@ -48,7 +48,7 @@ __available_web__indexers__: Final[dict] = {
     "living_costs": {
         "numbeo": "https://www.numbeo.com/cost-of-living/compare_cities.jsp?country1=United+States&city1={current_city}%2C+{current_state_abrv}&country2=United+States&city2={target_city}%2C+{target_state_abrv}"
     },
-    "queer_scoring": {
+    "equality_scoring": {
         "lgbtmap": "https://www.lgbtmap.org/equality_maps/profile_state/{mixed_state_abrv}",
     },
 }
@@ -184,11 +184,11 @@ class SearchQuery:
         "target_state": list[str],
         "current_state": list[str],
         "majoring_target": list[str],
-        "use_queer_scoring": bool,
+        "use_equality_scoring": bool,
     }
 
     # Constructor
-    def __init__(self, target_state: str, current_state: str, majoring_target: str, use_queer_scoring: bool) -> None:
+    def __init__(self, target_state: str, current_state: str, majoring_target: str, use_equality_scoring: bool) -> None:
         """
         Instances a ``SearchQuery`` object that holds relevant user inputted data.
 
@@ -200,7 +200,7 @@ class SearchQuery:
             The state/region the user currently resides in
         majoring_target : str
             The major the user plans to achieve
-        use_queer_scoring : bool
+        use_equality_scoring : bool
             Compare the overall M.A.P score of the targeted region to the current, residing, region
         """
 
@@ -220,9 +220,9 @@ class SearchQuery:
             if majoring_target is not None
             else None
         )
-        self._search_query["use_queer_scoring"] = (
-            use_queer_scoring
-            if use_queer_scoring is not None
+        self._search_query["use_equality_scoring"] = (
+            use_equality_scoring
+            if use_equality_scoring is not None
             else False
         )
 
@@ -241,7 +241,7 @@ class SearchQuery:
             self._search_query.get("target_state", None),
             self._search_query.get("current_state", None),
             self._search_query.get("majoring_target", None),
-            self._search_query.get("use_queer_scoring", None),
+            self._search_query.get("use_equality_scoring", None),
         ]
 
     # Private Static Methods
@@ -258,11 +258,11 @@ async def search(query: SearchQuery) -> dict:
         "scholarships": {},
         "universities": {},
         "living_costs": {},
-        "queer_scoring": {},
+        "equality_scoring": {},
     }
 
     # Execute in "parallel" (this is actually roughly ~600ms faster)
-    data: Final[tuple[dict, dict, dict]] = await asyncio.gather(
+    data: Final[tuple[dict, dict, dict, dict]] = await asyncio.gather(
         _search_for_scholarships(
             target_state=(
                 consolidated_data[0][2] if consolidated_data[0] is not None else None
@@ -296,14 +296,14 @@ async def search(query: SearchQuery) -> dict:
                 consolidated_data[1][3] if consolidated_data[1] is not None else None
             ),
         ),
-        _search_for_queer_scoring(
+        _search_for_equality_scoring(
             target_state_abrv=(
                 consolidated_data[0][3] if consolidated_data[0] is not None else None
             ),
             current_state_abrv=(
                 consolidated_data[1][3] if consolidated_data[1] is not None else None
             ),
-            use_queer_scoring=(
+            use_equality_scoring=(
                 consolidated_data[3] if consolidated_data[3] is not None else False
             ),
         ),
@@ -313,7 +313,7 @@ async def search(query: SearchQuery) -> dict:
     return_data["scholarships"] = data[0]
     return_data["universities"] = data[1]
     return_data["living_costs"] = data[2]
-    return_data["queer_scoring"] = data[3]
+    return_data["equality_scoring"] = data[3]
 
     # Return
     return return_data
@@ -1227,7 +1227,7 @@ async def _search_for_living_costs(target_city: str, target_state_abrv: str, cur
     # Return
     return return_data
 
-async def _search_for_queer_scoring(target_state_abrv: str, current_state_abrv: str, use_queer_scoring: bool) -> dict:
+async def _search_for_equality_scoring(target_state_abrv: str, current_state_abrv: str, use_equality_scoring: bool) -> dict:
     async def _extract(web_response: any, web_source: str) -> list[dict]:
         """
         Handles the extraction of university information from the given ``web_response``.
@@ -1332,7 +1332,7 @@ async def _search_for_queer_scoring(target_state_abrv: str, current_state_abrv: 
         if target_state_abrv is not None:
             # Format the URL
             formatted_url_lgbtmap: Final[str] = (
-                __available_web__indexers__.get("queer_scoring", None)
+                __available_web__indexers__.get("equality_scoring", None)
                 .get("lgbtmap", None)
                 .format(mixed_state_abrv=target_state_abrv)
                 .replace(" ", "%20")
@@ -1353,7 +1353,7 @@ async def _search_for_queer_scoring(target_state_abrv: str, current_state_abrv: 
         if current_state_abrv is not None:
             # Format the URL
             formatted_url_lgbtmap: Final[str] = (
-                __available_web__indexers__.get("queer_scoring", None)
+                __available_web__indexers__.get("equality_scoring", None)
                 .get("lgbtmap", None)
                 .format(mixed_state_abrv=current_state_abrv)
                 .replace(" ", "%20")
@@ -1381,7 +1381,7 @@ async def _search_for_queer_scoring(target_state_abrv: str, current_state_abrv: 
     }
 
     # Execute
-    if use_queer_scoring == True:
+    if use_equality_scoring == True:
         await asyncio.gather(
             _search(return_data=return_data)
         )
@@ -1397,7 +1397,7 @@ if __name__ == "__main__":
                 target_state="CA",
                 current_state="Florida",
                 majoring_target="Computer Science",
-                use_queer_scoring=True,
+                use_equality_scoring=True,
             )
         )
     )
